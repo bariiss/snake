@@ -143,6 +143,22 @@
   flex-wrap: wrap;
 }
 
+.header-actions button {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 100px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-outline {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.4);
