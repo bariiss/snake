@@ -9,6 +9,7 @@ body {
   background: #0a0e27;
   min-height: 100vh;
   color: #e0e0e0;
+  font-size: 0.95rem;
 }
 
 button {
@@ -16,9 +17,9 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 

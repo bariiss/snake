@@ -10,24 +10,53 @@
   </div>
 
   <div class="game-content">
+    <!-- Left Panel: Statistics -->
     <div class="game-info">
+      <h4 class="stats-title">Statistics</h4>
+      <div class="stats-content">
+        <div class="stat-item">
+          <span class="stat-label">Food Eaten:</span>
+          <span class="stat-value">{{ getTotalFoodEaten() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Games Won:</span>
+          <span class="stat-value">{{ getGamesWon() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Games Played:</span>
+          <span class="stat-value">{{ getGamesPlayed() }}</span>
+        </div>
+      </div>
+      
       <div *ngIf="gameState?.snakes" class="scores">
+        <h4 class="scores-title">Current Scores</h4>
         <div *ngFor="let snake of gameState!.snakes" class="score-item">
           <div class="score-color" [style.background-color]="snake.color"></div>
           <span>{{ snake.username || 'Player' }}: {{ snake.score }}</span>
         </div>
       </div>
+    </div>
 
-      <div *ngIf="!gameState || gameState?.status === 'waiting'" class="ready-section">
-        <div *ngIf="!gameState" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Loading game...</p>
-        </div>
-        
-          <div *ngIf="gameState?.status === 'waiting'" class="waiting-state">
-          <h3 class="waiting-title">Waiting for Players</h3>
+    <div class="canvas-container">
+      <div 
+        *ngIf="shouldShowStatusBanner()" 
+        class="status-banner">
+        {{ getStatusBannerText() }}
+      </div>
+      <canvas #gameCanvas class="game-canvas"></canvas>
+      
+      <!-- Waiting Modal -->
+      <div *ngIf="!gameState || gameState?.status === 'waiting'" class="modal-overlay">
+        <div class="modal-content waiting-modal">
+          <div *ngIf="!gameState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading game...</p>
+          </div>
           
-          <div *ngIf="!isSpectator" class="players-status">
+          <div *ngIf="gameState?.status === 'waiting'">
+            <h3 class="waiting-title">Waiting for Players</h3>
+            
+            <div *ngIf="!isSpectator" class="players-status">
               <div class="player-card" [class.ready]="getCurrentPlayerStatus()?.ready">
                 <div class="avatar" [style.border-color]="'#FF0000'">{{ getInitial(getCurrentPlayerStatus()?.username) }}</div>
                 <div class="player-info">
@@ -47,42 +76,33 @@
                   </span>
                 </div>
               </div>
-          </div>
-          
-          <div *ngIf="!isSpectator" class="ready-action">
-            <p class="ready-prompt" *ngIf="!isReady">
-              Click the button below when you're ready to start:
-            </p>
-            <p class="ready-prompt ready-text" *ngIf="isReady">
-              You're ready! Waiting for {{ getOtherPlayer()?.username || 'opponent' }}...
-            </p>
-            <button 
-              class="btn-ready" 
-              [class.btn-ready-active]="isReady"
-              [class.btn-ready-inactive]="!isReady"
-              (click)="playerReady()"
-              [disabled]="isReady"
-            >
-              <span *ngIf="!isReady">🎮 Click to Ready</span>
-              <span *ngIf="isReady">✓ Ready!</span>
-            </button>
-          </div>
-          
-          <div *ngIf="isSpectator" class="spectator-waiting">
-            <p>👁️ Waiting for players to be ready...</p>
+            </div>
+            
+            <div *ngIf="!isSpectator" class="ready-action">
+              <p class="ready-prompt" *ngIf="!isReady">
+                Click the button below when you're ready to start:
+              </p>
+              <p class="ready-prompt ready-text" *ngIf="isReady">
+                You're ready! Waiting for {{ getOtherPlayer()?.username || 'opponent' }}...
+              </p>
+              <button 
+                class="btn-ready btn-small" 
+                [class.btn-ready-active]="isReady"
+                [class.btn-ready-inactive]="!isReady"
+                (click)="playerReady()"
+                [disabled]="isReady"
+              >
+                <span *ngIf="!isReady">🎮 Click to Ready</span>
+                <span *ngIf="isReady">✓ Ready!</span>
+              </button>
+            </div>
+            
+            <div *ngIf="isSpectator" class="spectator-waiting">
+              <p>👁️ Waiting for players to be ready...</p>
+            </div>
           </div>
         </div>
       </div>
-
-    </div>
-
-    <div class="canvas-container">
-      <div 
-        *ngIf="shouldShowStatusBanner()" 
-        class="status-banner">
-        {{ getStatusBannerText() }}
-      </div>
-      <canvas #gameCanvas class="game-canvas"></canvas>
       
       <!-- Game Over Overlay -->
       <div *ngIf="gameState?.status === 'finished'" class="game-over-overlay">

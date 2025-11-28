@@ -20,6 +20,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   pendingRequests: any[] = [];
   currentPlayer: Player | null = null;
   showUsernameEdit: boolean = false;
+  editUsernameValue: string = '';
   errorMessage: string = '';
   activeGames: any[] = [];
 
@@ -138,27 +139,26 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   editUsername(): void {
+    this.editUsernameValue = this.currentPlayer?.username || this.username || '';
     this.showUsernameEdit = true;
   }
 
   updateUsername(): void {
-    if (this.username.trim()) {
-      localStorage.setItem(this.USERNAME_STORAGE_KEY, this.username.trim());
+    if (this.editUsernameValue.trim()) {
+      this.username = this.editUsernameValue.trim();
+      localStorage.setItem(this.USERNAME_STORAGE_KEY, this.username);
       // Disconnect and reconnect with new username
       this.disconnect();
       setTimeout(() => {
         this.connect();
       }, 100);
+      this.showUsernameEdit = false;
     }
   }
 
   cancelEditUsername(): void {
-    // Restore saved username
-    const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
-    if (savedUsername) {
-      this.username = savedUsername;
-    }
     this.showUsernameEdit = false;
+    this.editUsernameValue = '';
   }
 
   disconnect(): void {

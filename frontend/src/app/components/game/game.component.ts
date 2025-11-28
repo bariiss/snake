@@ -55,6 +55,8 @@ export class GameComponent implements OnInit, OnDestroy {
           // Check if game is finished to show rematch button
           if (state.status === 'finished' && !this.isSpectator) {
             this.showRematchButton = true;
+            // Update statistics
+            this.updateGameStats(state);
           }
           // Handle rematch countdown
           if (state.status === 'rematch_countdown' && (state as any).countdown) {
@@ -403,5 +405,55 @@ export class GameComponent implements OnInit, OnDestroy {
     }
     this.gameService.sendPlayerMove(this.gameId, direction);
   }
-}
 
+  private readonly STATS_KEY = 'snake_game_stats';
+
+  getTotalFoodEaten(): number {
+    const stats = this.getStats();
+    return stats.totalFoodEaten || 0;
+  }
+
+  getGamesWon(): number {
+    const stats = this.getStats();
+    return stats.gamesWon || 0;
+  }
+
+  getGamesPlayed(): number {
+    const stats = this.getStats();
+    return stats.gamesPlayed || 0;
+  }
+
+  private getStats(): { totalFoodEaten: number; gamesWon: number; gamesPlayed: number } {
+    const stored = localStorage.getItem(this.STATS_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return { totalFoodEaten: 0, gamesWon: 0, gamesPlayed: 0 };
+      }
+    }
+    return { totalFoodEaten: 0, gamesWon: 0, gamesPlayed: 0 };
+  }
+
+  private updateGameStats(state: GameState): void {
+    if (!state.snakes || !this.currentPlayerId) return;
+    
+    const currentPlayerSnake = state.snakes.find(s => s.id === this.currentPlayerId);
+    if (!currentPlayerSnake) return;
+    
+    const foodEaten = currentPlayerSnake.score || 0;
+    const won = state.winner === this.currentPlayerId;
+    
+    this.updateStats(foodEaten, won);
+  }
+
+  private updateStats(foodEaten: number, won: boolean): void {
+    const stats = this.getStats();
+    stats.totalFoodEaten = (stats.totalFoodEaten || 0) + foodEaten;
+    stats.gamesPlayed = (stats.gamesPlayed || 0) + 1;
+    if (won) {
+      stats.gamesWon = (stats.gamesWon || 0) + 1;
+    }
+    localStorage.setItem(this.STATS_KEY, JSON.stringify(stats));
+  }
+}
