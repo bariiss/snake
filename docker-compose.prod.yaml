@@ -8,6 +8,8 @@ services:
       - PORT=8020
     expose:
       - "8020"
+    ports:
+      - "8020:8020"
     networks:
       - snake-prod-network
     restart: unless-stopped
@@ -22,20 +24,8 @@ services:
     container_name: snake-frontend-prod
     expose:
       - "80"
-    networks:
-      - snake-prod-network
-    restart: unless-stopped
-
-  proxy:
-    image: nginx:1.27-alpine
-    container_name: snake-proxy-prod
-    depends_on:
-      - frontend
-      - backend
     ports:
-      - "8030:80"
-    volumes:
-      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - "8040:80"
     networks:
       - snake-prod-network
     restart: unless-stopped
