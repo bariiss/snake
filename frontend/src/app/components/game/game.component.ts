@@ -21,6 +21,7 @@ export class GameComponent implements OnInit, OnDestroy {
   showRematchButton: boolean = false;
   isRematchReady: boolean = false;
   currentPlayerId: string = '';
+  banner: { type: 'info' | 'warning'; message: string } | null = null;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private cellSize = 20;
@@ -79,6 +80,12 @@ export class GameComponent implements OnInit, OnDestroy {
         if (player) {
           this.currentPlayerId = player.id;
         }
+      })
+    );
+
+    this.subscriptions.add(
+      this.gameService.getBanner().subscribe(banner => {
+        this.banner = banner;
       })
     );
 
@@ -328,6 +335,9 @@ export class GameComponent implements OnInit, OnDestroy {
     const winnerSnake = this.gameState.snakes.find(s => s.id === this.gameState!.winner);
     return winnerSnake?.username || `Player ${this.gameState.winner.substring(0, 8)}`;
   }
+  dismissBanner(): void {
+    this.banner = null;
+  }
 
   get rematchRequestedByOpponent(): boolean {
     if (!this.gameState?.rematchRequesterId || !this.currentPlayerId) {
@@ -339,6 +349,13 @@ export class GameComponent implements OnInit, OnDestroy {
   get rematchRequestMessage(): string {
     const name = this.gameState?.rematchRequesterName || 'Opponent';
     return `${name} wants a rematch`;
+  }
+
+  getInitial(name?: string | null): string {
+    if (!name || !name.length) {
+      return '?';
+    }
+    return name.charAt(0).toUpperCase();
   }
 
   private getPlaceholderSnakes(): Snake[] | null {

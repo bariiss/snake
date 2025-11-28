@@ -4,6 +4,11 @@
     <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
   </div>
 
+  <div *ngIf="banner" class="banner" [class.banner-warning]="banner.type === 'warning'">
+    <span>{{ banner.message }}</span>
+    <button (click)="dismissBanner()">✕</button>
+  </div>
+
   <div class="game-content">
     <div class="game-info">
       <div *ngIf="gameState?.snakes" class="scores">
@@ -19,23 +24,29 @@
           <p>Loading game...</p>
         </div>
         
-        <div *ngIf="gameState?.status === 'waiting'" class="waiting-state">
+          <div *ngIf="gameState?.status === 'waiting'" class="waiting-state">
           <h3 class="waiting-title">Waiting for Players</h3>
           
           <div *ngIf="!isSpectator" class="players-status">
-            <div class="player-status-item" [class.ready]="getCurrentPlayerStatus()?.ready">
-              <div class="status-indicator" [class.active]="getCurrentPlayerStatus()?.ready"></div>
-              <span class="player-name">{{ getCurrentPlayerStatus()?.username || 'You' }}</span>
-              <span class="status-badge" *ngIf="getCurrentPlayerStatus()?.ready">✓ Ready</span>
-              <span class="status-badge waiting" *ngIf="!getCurrentPlayerStatus()?.ready">Waiting...</span>
-            </div>
-            
-            <div class="player-status-item" [class.ready]="getOtherPlayer()?.ready">
-              <div class="status-indicator" [class.active]="getOtherPlayer()?.ready"></div>
-              <span class="player-name">{{ getOtherPlayer()?.username || 'Opponent' }}</span>
-              <span class="status-badge" *ngIf="getOtherPlayer()?.ready">✓ Ready</span>
-              <span class="status-badge waiting" *ngIf="!getOtherPlayer()?.ready">Waiting...</span>
-            </div>
+              <div class="player-card" [class.ready]="getCurrentPlayerStatus()?.ready">
+                <div class="avatar" [style.border-color]="'#FF0000'">{{ getInitial(getCurrentPlayerStatus()?.username) }}</div>
+                <div class="player-info">
+                  <span class="player-name">{{ getCurrentPlayerStatus()?.username || 'You' }}</span>
+                  <span class="badge" [class.badge-ready]="getCurrentPlayerStatus()?.ready">
+                    {{ getCurrentPlayerStatus()?.ready ? 'Ready' : 'Waiting' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="player-card" [class.ready]="getOtherPlayer()?.ready">
+                <div class="avatar" [style.border-color]="'#0000FF'">{{ getInitial(getOtherPlayer()?.username) }}</div>
+                <div class="player-info">
+                  <span class="player-name">{{ getOtherPlayer()?.username || 'Opponent' }}</span>
+                  <span class="badge" [class.badge-ready]="getOtherPlayer()?.ready">
+                    {{ getOtherPlayer()?.ready ? 'Ready' : 'Waiting' }}
+                  </span>
+                </div>
+              </div>
           </div>
           
           <div *ngIf="!isSpectator" class="ready-action">

@@ -57,6 +57,7 @@ export class GameService {
   private pendingRequest$ = new BehaviorSubject<any[]>([]);
   private activeGames$ = new BehaviorSubject<any[]>([]);
   private isSpectator$ = new BehaviorSubject<boolean>(false);
+  private banner$ = new BehaviorSubject<{ type: 'info' | 'warning'; message: string } | null>(null);
 
   constructor(
     private wsService: WebSocketService,
@@ -137,6 +138,7 @@ export class GameService {
               (req: any) => req.from_player?.id !== message.from_player.id
             );
             this.gameRequest$.next(requestsAfterCancel);
+            this.showInfoBanner(`${message.from_player?.username || 'Opponent'} cancelled the invitation.`);
           } else {
             // We cancelled our request
             const pendingAfterCancel = (this.pendingRequest$.value || []).filter(
@@ -165,8 +167,8 @@ export class GameService {
         case 'player_disconnected':
           // Player disconnected - show message and return to lobby
           if (message.message && message.player) {
-            alert(`${message.player} has left the game. Returning to lobby...`);
-            this.router.navigate(['/']);
+            this.showInfoBanner(`${message.player} has left the game. Returning to lobby...`, 'warning');
+            setTimeout(() => this.router.navigate(['/']), 2500);
           }
           break;
         case 'rematch_request':
@@ -283,6 +285,19 @@ export class GameService {
 
   isSpectator(): Observable<boolean> {
     return this.isSpectator$.asObservable();
+  }
+
+  getBanner(): Observable<{ type: 'info' | 'warning'; message: string } | null> {
+    return this.banner$.asObservable();
+  }
+
+  private showInfoBanner(message: string, type: 'info' | 'warning' = 'info'): void {
+    this.banner$.next({ type, message });
+    setTimeout(() => {
+      if (this.banner$.value?.message === message) {
+        this.banner$.next(null);
+      }
+    }, 4000);
   }
 
   listGames(): void {
