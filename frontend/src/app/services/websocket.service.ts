@@ -12,6 +12,7 @@ export class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
+  private shouldReconnect = true;
 
   connect(username: string): void {
     // Disconnect existing connection if any
@@ -19,6 +20,7 @@ export class WebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    this.shouldReconnect = true;
     
     const wsUrl = this.getWebSocketUrl();
     const url = `${wsUrl}/ws?username=${encodeURIComponent(username)}`;
@@ -63,7 +65,7 @@ export class WebSocketService {
       this.ws.onclose = (event) => {
         console.log('WebSocket closed', event.code, event.reason);
         // Only attempt reconnect if not a normal closure
-        if (event.code !== 1000 && event.code !== 1001) {
+        if (this.shouldReconnect && event.code !== 1000 && event.code !== 1001) {
           this.attemptReconnect(username);
         }
       };
@@ -93,8 +95,14 @@ export class WebSocketService {
   }
 
   disconnect(): void {
+    this.shouldReconnect = false;
+    this.reconnectAttempts = 0;
     if (this.ws) {
-      this.ws.close();
+      try {
+        this.ws.close(1000, 'client disconnect');
+      } catch (error) {
+        console.error('Error closing WebSocket:', error);
+      }
       this.ws = null;
     }
   }

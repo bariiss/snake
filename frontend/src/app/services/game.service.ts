@@ -337,6 +337,18 @@ export class GameService {
 
   disconnect(): void {
     this.wsService.disconnect();
+    this.resetState();
+  }
+
+  resetState(): void {
+    this.currentGameState$.next(null);
+    this.lobbyPlayers$.next([]);
+    this.currentPlayer$.next(null);
+    this.gameRequest$.next([]);
+    this.pendingRequest$.next([]);
+    this.activeGames$.next([]);
+    this.isSpectator$.next(false);
+    this.clearBanner();
   }
 }
 
