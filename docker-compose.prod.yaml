@@ -17,8 +17,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - API_URL=https://snake.teora.me
-        - WS_URL=wss://snake.teora.me
+        - API_URL=https://snake.li1.nl
+        - WS_URL=wss://snake.li1.nl
     container_name: snake-frontend-prod
     expose:
       - "80"
