@@ -190,14 +190,31 @@ func (gm *Manager) usernameExists(username string) bool {
 	defer gm.Mutex.RUnlock()
 
 	for _, game := range gm.Games {
-		if strings.EqualFold(game.Player1.Username, username) || strings.EqualFold(game.Player2.Username, username) {
-			return true
-		}
 		game.Mutex.RLock()
-		for _, spec := range game.Spectators {
-			if strings.EqualFold(spec.Username, username) {
+		// Check if player1 is still connected
+		if game.Player1 != nil && strings.EqualFold(game.Player1.Username, username) {
+			// Check if connection is still open
+			if game.Player1.Conn != nil {
 				game.Mutex.RUnlock()
 				return true
+			}
+		}
+		// Check if player2 is still connected
+		if game.Player2 != nil && strings.EqualFold(game.Player2.Username, username) {
+			// Check if connection is still open
+			if game.Player2.Conn != nil {
+				game.Mutex.RUnlock()
+				return true
+			}
+		}
+		// Check spectators
+		for _, spec := range game.Spectators {
+			if spec != nil && strings.EqualFold(spec.Username, username) {
+				// Check if connection is still open
+				if spec.Conn != nil {
+					game.Mutex.RUnlock()
+					return true
+				}
 			}
 		}
 		game.Mutex.RUnlock()
