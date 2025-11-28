@@ -58,6 +58,7 @@ export class GameService {
   private activeGames$ = new BehaviorSubject<any[]>([]);
   private isSpectator$ = new BehaviorSubject<boolean>(false);
   private banner$ = new BehaviorSubject<{ type: 'info' | 'warning'; message: string } | null>(null);
+  private connectionError$ = new BehaviorSubject<string | null>(null);
 
   constructor(
     private wsService: WebSocketService,
@@ -191,8 +192,12 @@ export class GameService {
           }
           break;
         case 'error':
-          console.error('Game error:', message.message);
-          // Error handling is done in components via error messages
+          if (message.code === 'USERNAME_EXISTS') {
+            this.connectionError$.next('Username already in use. Please choose another name.');
+            this.wsService.disconnect();
+          } else {
+            console.error('Game error:', message.message);
+          }
           break;
       }
     });
@@ -289,6 +294,18 @@ export class GameService {
 
   getBanner(): Observable<{ type: 'info' | 'warning'; message: string } | null> {
     return this.banner$.asObservable();
+  }
+
+  clearBanner(): void {
+    this.banner$.next(null);
+  }
+
+  getConnectionError(): Observable<string | null> {
+    return this.connectionError$.asObservable();
+  }
+
+  clearConnectionError(): void {
+    this.connectionError$.next(null);
   }
 
   private showInfoBanner(message: string, type: 'info' | 'warning' = 'info'): void {

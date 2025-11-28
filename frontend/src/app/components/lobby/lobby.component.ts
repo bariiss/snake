@@ -92,6 +92,18 @@ export class LobbyComponent implements OnInit, OnDestroy {
         this.activeGames = games;
       })
     );
+
+    this.subscriptions.add(
+      this.gameService.getConnectionError().subscribe(error => {
+        if (error) {
+          this.errorMessage = error;
+          this.isConnected = false;
+          this.releaseSessionLock();
+          this.showUsernameEdit = true;
+          this.gameService.clearConnectionError();
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {
@@ -103,12 +115,19 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   connect(): void {
     if (this.username.trim()) {
+      const trimmedUsername = this.username.trim();
+      const duplicate = this.players.some(
+        player => player.username?.toLowerCase() === trimmedUsername.toLowerCase()
+      );
+      if (duplicate) {
+        this.errorMessage = 'Username already in use. Please choose another.';
+        return;
+      }
       if (!this.acquireSessionLock()) {
         this.errorMessage = 'You already have an active game in another tab.';
         return;
       }
       // Save username to local storage
-      const trimmedUsername = this.username.trim();
       localStorage.setItem(this.USERNAME_STORAGE_KEY, trimmedUsername);
       this.username = trimmedUsername; // Ensure username is set
       this.gameService.connect(trimmedUsername);

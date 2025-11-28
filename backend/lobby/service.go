@@ -1,6 +1,7 @@
 package lobby
 
 import (
+	"strings"
 	"sync"
 
 	"snake-backend/models"
@@ -57,8 +58,13 @@ func (s *Service) ExistsByUsername(username string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	target := strings.ToLower(strings.TrimSpace(username))
+	if target == "" {
+		return false
+	}
+
 	for _, p := range s.players {
-		if p.Username == username {
+		if strings.EqualFold(strings.TrimSpace(p.Username), target) {
 			return true
 		}
 	}

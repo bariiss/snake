@@ -336,7 +336,7 @@ export class GameComponent implements OnInit, OnDestroy {
     return winnerSnake?.username || `Player ${this.gameState.winner.substring(0, 8)}`;
   }
   dismissBanner(): void {
-    this.banner = null;
+    this.gameService.clearBanner();
   }
 
   get rematchRequestedByOpponent(): boolean {

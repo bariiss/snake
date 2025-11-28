@@ -167,20 +167,12 @@ func (gm *Manager) startRematch(gameID string) {
 	}
 
 	game.Mutex.Lock()
-	game.State.Status = "countdown"
-	game.State.Countdown = 3
+	game.State.Status = "waiting"
+	game.State.Countdown = 0
 	game.State.Winner = ""
 	game.Player1.Ready = false
 	game.Player2.Ready = false
 	game.Mutex.Unlock()
-
-	for i := 3; i > 0; i-- {
-		game.Mutex.Lock()
-		game.State.Countdown = i
-		game.Mutex.Unlock()
-		broadcastToPlayers(game, constants.MSG_GAME_UPDATE, game.State)
-		time.Sleep(1 * time.Second)
-	}
 
 	gm.StartGame(gameID)
 }

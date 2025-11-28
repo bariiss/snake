@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,11 +27,12 @@ func (gm *Manager) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	username := strings.TrimSpace(r.URL.Query().Get("username"))
 	player := &models.Player{
 		ID:       uuid.New().String(),
 		Conn:     conn,
 		Send:     make(chan []byte, 256),
-		Username: r.URL.Query().Get("username"),
+		Username: username,
 		Ready:    false,
 		JoinedAt: time.Now(),
 	}
@@ -188,12 +190,12 @@ func (gm *Manager) usernameExists(username string) bool {
 	defer gm.Mutex.RUnlock()
 
 	for _, game := range gm.Games {
-		if game.Player1.Username == username || game.Player2.Username == username {
+		if strings.EqualFold(game.Player1.Username, username) || strings.EqualFold(game.Player2.Username, username) {
 			return true
 		}
 		game.Mutex.RLock()
 		for _, spec := range game.Spectators {
-			if spec.Username == username {
+			if strings.EqualFold(spec.Username, username) {
 				game.Mutex.RUnlock()
 				return true
 			}
