@@ -63,6 +63,31 @@
   border: 1px solid #2a2a4a;
 }
 
+.card.lobby-card h1 {
+  font-size: 1.8rem;
+  margin: 0 0 1.5rem 0;
+  color: #e0e0e0;
+  text-align: center;
+  display: inline-block;
+  animation: slither 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes slither {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  25% {
+    transform: translateY(-8px) scaleY(1.05);
+  }
+  50% {
+    transform: translateY(0) scaleY(1);
+  }
+  75% {
+    transform: translateY(8px) scaleY(0.95);
+  }
+}
+
 .connect-section {
   display: flex;
   flex-direction: column;
