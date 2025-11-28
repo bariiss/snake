@@ -5,13 +5,15 @@ import (
 	"net/http"
 	"os"
 
-	gamepkg "snake-backend/game"
+	"snake-backend/game"
+	"snake-backend/handlers"
 )
 
 func main() {
-	gameManager := gamepkg.NewGameManager()
+	gameManager := game.NewGameManager()
+	wsHandler := handlers.NewWebSocketHandler(gameManager)
 
-	http.HandleFunc("/ws", gameManager.HandleWebSocket)
+	http.Handle("/ws", wsHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

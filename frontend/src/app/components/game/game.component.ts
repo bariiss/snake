@@ -179,28 +179,42 @@ export class GameComponent implements OnInit, OnDestroy {
     if (!this.isRematchReady) {
       this.gameService.requestRematch(this.gameId);
       this.isRematchReady = true;
+      if (this.gameState) {
+        this.gameState = {
+          ...this.gameState,
+          rematchRequesterId: this.currentPlayerId,
+          rematchRequesterName: this.getCurrentPlayerStatus()?.username
+        } as any;
+      }
     }
   }
 
   drawGame(): void {
     if (!this.gameState || !this.ctx) return;
 
-    // Clear canvas
     this.ctx.fillStyle = '#1a1a2e';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw grid
     this.drawGrid();
 
-    // Draw food
     if (this.gameState.food) {
       this.drawFood(this.gameState.food.position);
     }
 
-    // Draw snakes
-    if (this.gameState.snakes) {
-      this.gameState.snakes.forEach(snake => {
-        this.drawSnake(snake);
+    let snakesToDraw = this.gameState.snakes;
+    let usePlaceholder = false;
+
+    if ((!snakesToDraw || snakesToDraw.length === 0) && this.gameState.status === 'waiting') {
+      const placeholders = this.getPlaceholderSnakes();
+      if (placeholders) {
+        snakesToDraw = placeholders;
+        usePlaceholder = true;
+      }
+    }
+
+    if (snakesToDraw) {
+      snakesToDraw.forEach(snake => {
+        this.drawSnake(snake, usePlaceholder);
       });
     }
   }
@@ -246,10 +260,14 @@ export class GameComponent implements OnInit, OnDestroy {
     this.ctx.shadowBlur = 0;
   }
 
-  drawSnake(snake: Snake): void {
+  drawSnake(snake: Snake, isPlaceholder: boolean = false): void {
     if (!snake.body || snake.body.length === 0) return;
 
-    // Draw body
+    const previousAlpha = this.ctx.globalAlpha;
+    if (isPlaceholder) {
+      this.ctx.globalAlpha = 0.45;
+    }
+
     snake.body.forEach((segment, index) => {
       const x = segment.x * this.cellSize;
       const y = segment.y * this.cellSize;
@@ -269,29 +287,32 @@ export class GameComponent implements OnInit, OnDestroy {
         this.ctx.fillRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4);
       }
     });
+
+    this.ctx.globalAlpha = previousAlpha;
   }
 
   backToLobby(): void {
     this.router.navigate(['/']);
   }
 
-  getStatusText(): string {
+  shouldShowStatusBanner(): boolean {
+    if (!this.gameState) return false;
+    return ['waiting', 'countdown', 'rematch_countdown'].includes(this.gameState.status);
+  }
+
+  getStatusBannerText(): string {
     if (!this.gameState) return '';
-    
-    switch (this.gameState.status) {
-      case 'waiting':
-        return 'Waiting for other player...';
-      case 'countdown':
-        return `Game starting: ${this.gameState.countdown}`;
-      case 'playing':
-        return 'Game in progress';
-      case 'finished':
-        return this.gameState.winner ? 'Game Over!' : 'Game Over (Tie)';
-      case 'rematch_countdown':
-        return `Rematch starting: ${this.rematchCountdown}`;
-      default:
-        return '';
+    if (this.gameState.status === 'waiting') {
+      const otherName = this.getOtherPlayer()?.username;
+      return otherName ? `Waiting for ${otherName}...` : 'Waiting for other player...';
     }
+    if (this.gameState.status === 'countdown') {
+      return `Game starting in ${this.gameState.countdown}`;
+    }
+    if (this.gameState.status === 'rematch_countdown') {
+      return `Rematch in ${this.rematchCountdown}`;
+    }
+    return '';
   }
 
   getSnakeScore(snakeId: string): number {
@@ -306,6 +327,49 @@ export class GameComponent implements OnInit, OnDestroy {
     }
     const winnerSnake = this.gameState.snakes.find(s => s.id === this.gameState!.winner);
     return winnerSnake?.username || `Player ${this.gameState.winner.substring(0, 8)}`;
+  }
+
+  get rematchRequestedByOpponent(): boolean {
+    if (!this.gameState?.rematchRequesterId || !this.currentPlayerId) {
+      return false;
+    }
+    return this.gameState.rematchRequesterId !== this.currentPlayerId;
+  }
+
+  get rematchRequestMessage(): string {
+    const name = this.gameState?.rematchRequesterName || 'Opponent';
+    return `${name} wants a rematch`;
+  }
+
+  private getPlaceholderSnakes(): Snake[] | null {
+    if (!this.gameState?.players || this.gameState.players.length === 0) {
+      return null;
+    }
+
+    const templates = [
+      [
+        { x: 5, y: 15 },
+        { x: 4, y: 15 },
+        { x: 3, y: 15 }
+      ],
+      [
+        { x: 35, y: 15 },
+        { x: 36, y: 15 },
+        { x: 37, y: 15 }
+      ]
+    ];
+
+    const colors = ['#FF0000', '#0000FF'];
+    const directions = ['right', 'left'];
+
+    return this.gameState.players.slice(0, 2).map((player, index) => ({
+      id: player.id,
+      username: player.username,
+      score: 0,
+      direction: directions[index] || 'right',
+      color: colors[index] || '#ffffff',
+      body: templates[index] ? templates[index].map(seg => ({ x: seg.x, y: seg.y })) : []
+    }));
   }
 
   handleTouchMove(direction: string): void {

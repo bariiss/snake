@@ -1,7 +1,6 @@
 <div class="game-container">
   <div class="game-header">
     <button class="btn-danger" (click)="backToLobby()">Back to Lobby</button>
-    <h2>{{ getStatusText() }}</h2>
     <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
   </div>
 
@@ -67,6 +66,11 @@
     </div>
 
     <div class="canvas-container">
+      <div 
+        *ngIf="shouldShowStatusBanner()" 
+        class="status-banner">
+        {{ getStatusBannerText() }}
+      </div>
       <canvas #gameCanvas class="game-canvas"></canvas>
       
       <!-- Game Over Overlay -->
@@ -83,6 +87,9 @@
           </div>
           
           <div *ngIf="!isSpectator" class="rematch-section">
+            <p *ngIf="rematchRequestedByOpponent" class="rematch-alert">
+              {{ rematchRequestMessage }}
+            </p>
             <p *ngIf="!isRematchReady" class="rematch-prompt">Click to request rematch:</p>
             <p *ngIf="isRematchReady && rematchCountdown === 0" class="rematch-waiting">Waiting for other player...</p>
             <p *ngIf="rematchCountdown > 0" class="rematch-countdown">Rematch starting in: {{ rematchCountdown }}</p>

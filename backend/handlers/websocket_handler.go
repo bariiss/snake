@@ -17,4 +17,3 @@ func NewWebSocketHandler(manager *game.Manager) *WebSocketHandler {
 func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.manager.HandleWebSocket(w, r)
 }
-

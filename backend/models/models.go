@@ -50,6 +50,7 @@ type Player struct {
 	Send     chan []byte     `json:"-"`
 	Username string          `json:"username"`
 	Ready    bool            `json:"ready"`
+	JoinedAt time.Time       `json:"joined_at"`
 }
 
 type Game struct {
@@ -62,4 +63,3 @@ type Game struct {
 	IsActive   bool
 	Spectators map[string]*Player
 }
-

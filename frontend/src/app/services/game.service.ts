@@ -7,6 +7,7 @@ export interface Player {
   id: string;
   username: string;
   ready: boolean;
+  joinedAt?: string;
 }
 
 export interface PlayerStatus {
@@ -23,6 +24,8 @@ export interface GameState {
   countdown?: number;
   winner?: string;
   players?: PlayerStatus[];
+  rematchRequesterId?: string;
+  rematchRequesterName?: string;
 }
 
 export interface Snake {
@@ -78,8 +81,11 @@ export class GameService {
           }
           break;
         case 'lobby_status':
-          console.log('Lobby status received:', message.players);
-          this.lobbyPlayers$.next(message.players || []);
+          const normalizedPlayers = (message.players || []).map((player: any) => ({
+            ...player,
+            joinedAt: player.joinedAt || player.joined_at
+          }));
+          this.lobbyPlayers$.next(normalizedPlayers);
           break;
         case 'games_list':
           this.activeGames$.next(message.games || []);
@@ -143,10 +149,18 @@ export class GameService {
           this.currentGameState$.next(message.data);
           break;
         case 'game_start':
-          this.currentGameState$.next(message.data);
+          this.currentGameState$.next({
+            ...(message.data || {}),
+            rematchRequesterId: undefined,
+            rematchRequesterName: undefined
+          });
           break;
         case 'game_over':
-          this.currentGameState$.next(message.data);
+          this.currentGameState$.next({
+            ...(message.data || {}),
+            rematchRequesterId: undefined,
+            rematchRequesterName: undefined
+          });
           break;
         case 'player_disconnected':
           // Player disconnected - show message and return to lobby
@@ -156,7 +170,11 @@ export class GameService {
           }
           break;
         case 'rematch_request':
-          // Other player requested rematch
+          this.currentGameState$.next({
+            ...this.currentGameState$.value,
+            rematchRequesterId: message.requester_id,
+            rematchRequesterName: message.requester_name
+          } as any);
           break;
         case 'rematch_countdown':
           // Rematch countdown
@@ -164,7 +182,9 @@ export class GameService {
             this.currentGameState$.next({
               ...this.currentGameState$.value,
               status: 'rematch_countdown',
-              countdown: message.countdown
+              countdown: message.countdown,
+              rematchRequesterId: undefined,
+              rematchRequesterName: undefined
             } as any);
           }
           break;
