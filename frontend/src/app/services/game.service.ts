@@ -335,6 +335,13 @@ export class GameService {
     });
   }
 
+  acceptRematch(gameId: string): void {
+    this.wsService.send({
+      type: 'rematch_accept',
+      game_id: gameId
+    });
+  }
+
   disconnect(): void {
     this.wsService.disconnect();
     this.resetState();

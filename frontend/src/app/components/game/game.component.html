@@ -101,15 +101,27 @@
             <p *ngIf="rematchRequestedByOpponent" class="rematch-alert">
               {{ rematchRequestMessage }}
             </p>
-            <p *ngIf="!isRematchReady" class="rematch-prompt">Click to request rematch:</p>
-            <p *ngIf="isRematchReady && rematchCountdown === 0" class="rematch-waiting">Waiting for other player...</p>
+            <p *ngIf="hasRequestedRematch()" class="rematch-waiting">
+              Waiting for {{ getOtherPlayer()?.username || 'opponent' }} to accept...
+            </p>
+            <p *ngIf="!rematchRequestedByOpponent && !hasRequestedRematch()" class="rematch-prompt">
+              Want to play again?
+            </p>
             <p *ngIf="rematchCountdown > 0" class="rematch-countdown">Rematch starting in: {{ rematchCountdown }}</p>
+            
             <button 
-              *ngIf="!isRematchReady"
+              *ngIf="rematchRequestedByOpponent"
+              class="btn-success btn-rematch" 
+              (click)="acceptRematch()"
+            >
+              ✓ Accept Rematch
+            </button>
+            <button 
+              *ngIf="!rematchRequestedByOpponent && !hasRequestedRematch()"
               class="btn-success btn-rematch" 
               (click)="requestRematch()"
             >
-              🔄 Rematch
+              🔄 Request Rematch
             </button>
           </div>
           

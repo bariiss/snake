@@ -19,7 +19,6 @@ export class GameComponent implements OnInit, OnDestroy {
   isSpectator: boolean = false;
   rematchCountdown: number = 0;
   showRematchButton: boolean = false;
-  isRematchReady: boolean = false;
   currentPlayerId: string = '';
   banner: { type: 'info' | 'warning'; message: string } | null = null;
   private canvas!: HTMLCanvasElement;
@@ -56,7 +55,6 @@ export class GameComponent implements OnInit, OnDestroy {
           // Check if game is finished to show rematch button
           if (state.status === 'finished' && !this.isSpectator) {
             this.showRematchButton = true;
-            this.isRematchReady = false;
           }
           // Handle rematch countdown
           if (state.status === 'rematch_countdown' && (state as any).countdown) {
@@ -183,9 +181,8 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   requestRematch(): void {
-    if (!this.isRematchReady) {
+    if (!this.hasRequestedRematch()) {
       this.gameService.requestRematch(this.gameId);
-      this.isRematchReady = true;
       if (this.gameState) {
         this.gameState = {
           ...this.gameState,
@@ -194,6 +191,17 @@ export class GameComponent implements OnInit, OnDestroy {
         } as any;
       }
     }
+  }
+
+  acceptRematch(): void {
+    this.gameService.acceptRematch(this.gameId);
+  }
+
+  hasRequestedRematch(): boolean {
+    if (!this.gameState?.rematchRequesterId || !this.currentPlayerId) {
+      return false;
+    }
+    return this.gameState.rematchRequesterId === this.currentPlayerId;
   }
 
   drawGame(): void {

@@ -130,23 +130,50 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 		return
 	}
 
+	var otherPlayer *models.Player
 	if game.Player1.ID == player.ID {
-		game.Player1.Ready = true
+		otherPlayer = game.Player2
 	} else {
-		game.Player2.Ready = true
+		otherPlayer = game.Player1
 	}
-	bothReady := game.Player1.Ready && game.Player2.Ready
 	game.Mutex.Unlock()
 
-	if bothReady {
-		go gm.startRematch(gameID)
-	} else {
-		broadcastToPlayers(game, constants.MSG_REMATCH_REQUEST, map[string]any{
+	// Send rematch request to other player
+	if otherPlayer != nil {
+		sendMessage(otherPlayer, constants.MSG_REMATCH_REQUEST, map[string]any{
 			"game_id":        gameID,
 			"requester_id":   player.ID,
 			"requester_name": player.Username,
 		})
 	}
+}
+
+func (gm *Manager) HandleRematchAccept(player *models.Player, gameID string) {
+	gm.Mutex.RLock()
+	game, exists := gm.Games[gameID]
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "Game not found",
+			"code":    "GAME_NOT_FOUND",
+		})
+		return
+	}
+
+	game.Mutex.Lock()
+	if game.Player1.ID != player.ID && game.Player2.ID != player.ID {
+		game.Mutex.Unlock()
+		sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "Only players can accept rematch",
+			"code":    "NOT_A_PLAYER",
+		})
+		return
+	}
+	game.Mutex.Unlock()
+
+	// Start rematch
+	go gm.startRematch(gameID)
 }
 
 func (gm *Manager) startRematch(gameID string) {

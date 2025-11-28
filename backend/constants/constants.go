@@ -29,6 +29,7 @@ const (
 	MSG_JOIN_SPECTATOR      = "join_spectator"
 	MSG_SPECTATOR_UPDATE    = "spectator_update"
 	MSG_REMATCH_REQUEST     = "rematch_request"
+	MSG_REMATCH_ACCEPT      = "rematch_accept"
 	MSG_REMATCH_COUNTDOWN   = "rematch_countdown"
 	MSG_REMATCH_START       = "rematch_start"
 	MSG_PLAYER_DISCONNECTED = "player_disconnected"

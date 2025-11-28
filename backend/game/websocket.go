@@ -178,6 +178,10 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		if gameID, ok := msg["game_id"].(string); ok {
 			gm.HandleRematchRequest(player, gameID)
 		}
+	case constants.MSG_REMATCH_ACCEPT:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.HandleRematchAccept(player, gameID)
+		}
 	}
 }
 
