@@ -100,6 +100,11 @@ func (gm *Manager) StartGame(gameID string) {
 
 	gm.BroadcastGamesList()
 
+	// Stop existing ticker if any (for rematch scenarios)
+	if game.Ticker != nil {
+		game.Ticker.Stop()
+	}
+
 	game.Ticker = time.NewTicker(constants.TICK_RATE)
 	go gm.gameLoop(game)
 }
