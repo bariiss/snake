@@ -36,12 +36,18 @@
 
     <div *ngIf="isConnected" class="lobby-content-wrapper">
       <div class="header-section">
-        <h2>Lobby</h2>
-        <p class="username">
-          Welcome, <strong>{{ currentPlayer?.username }}</strong>!
-          <button class="btn-link" (click)="editUsername()" title="Change username">✏️</button>
-        </p>
-        <button class="btn-danger" (click)="disconnect()">Disconnect</button>
+        <div class="header-title">
+          <h2>Lobby</h2>
+          <p class="username">
+            Welcome, <strong>{{ currentPlayer?.username }}</strong>
+          </p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-secondary btn-outline" (click)="editUsername()" title="Change username">
+            ✏️ Edit
+          </button>
+          <button class="btn-danger" (click)="disconnect()">Disconnect</button>
+        </div>
       </div>
 
       <!-- Game Requests (Multiple) -->
