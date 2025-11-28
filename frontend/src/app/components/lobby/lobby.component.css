@@ -1,0 +1,388 @@
+.lobby-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card.lobby-card {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2a2a4a;
+}
+
+.connect-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.input-group {
+  width: 100%;
+  max-width: 400px;
+}
+
+.input-group input {
+  width: 100%;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.button-container button {
+  width: 100%;
+}
+
+.username-edit-section {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.username-edit-section h3 {
+  margin-bottom: 1rem;
+  color: #64b5f6;
+}
+
+.lobby-content-wrapper {
+  padding-top: 1rem;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #2a2a4a;
+}
+
+.header-section h2 {
+  color: #e0e0e0;
+  font-size: 2rem;
+}
+
+.username {
+  color: #90caf9;
+  font-size: 1.1rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #90caf9;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 8px;
+  margin-left: 8px;
+}
+
+.btn-link:hover {
+  color: #64b5f6;
+  transform: none;
+  box-shadow: none;
+}
+
+.game-requests-section {
+  margin-bottom: 1.5rem;
+}
+
+.game-requests-section h3 {
+  color: #e0e0e0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.request-item {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 2px solid #ffcc80;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.request-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.request-from {
+  font-weight: 600;
+  color: #e65100;
+  font-size: 0.95rem;
+}
+
+.request-text {
+  color: #bf360c;
+  font-size: 0.9rem;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-requests-section {
+  margin-bottom: 1.5rem;
+}
+
+.pending-requests-section h3 {
+  color: #e0e0e0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-item {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 2px solid #90caf9;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pending-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.pending-text {
+  color: #1565c0;
+  font-size: 0.9rem;
+}
+
+.pending-to {
+  font-weight: 600;
+  color: #0d47a1;
+  font-size: 0.95rem;
+}
+
+.btn-cancel {
+  background: #ffccbc;
+  color: #bf360c;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #ffab91;
+}
+
+.btn-cancel-small {
+  background: #ffccbc;
+  color: #bf360c;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-cancel-small:hover {
+  background: #ffab91;
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.request-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-text {
+  color: #90caf9;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.players-section {
+  margin-top: 2rem;
+}
+
+.players-section h3 {
+  margin-bottom: 1.5rem;
+  color: #e0e0e0;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.players-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.players-list::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-radius: 3px;
+}
+
+.players-list::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 3px;
+}
+
+.players-list::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
+}
+
+.player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #1a1a2e;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid #2a2a4a;
+}
+
+.player-item:hover {
+  background: #252540;
+  transform: translateX(4px);
+}
+
+.player-item.current-player {
+  background: #1a3a2a;
+  border: 2px solid #4CAF50;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-name {
+  font-weight: 600;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.you-badge {
+  background: #28a745;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 0.8rem;
+}
+
+.active-games-section {
+  margin-top: 2rem;
+}
+
+.active-games-section h3 {
+  margin-bottom: 1.5rem;
+  color: #e0e0e0;
+}
+
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-item {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #2a2a4a;
+  transition: all 0.3s ease;
+}
+
+.game-item:hover {
+  background: #252540;
+  transform: translateX(4px);
+}
+
+.game-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.game-players {
+  color: #90caf9;
+  font-size: 0.9rem;
+}
+
+.game-status {
+  color: #4CAF50;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.game-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #b0b0b0;
+  margin-top: 0.5rem;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

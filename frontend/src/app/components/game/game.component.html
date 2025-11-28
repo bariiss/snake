@@ -1,0 +1,147 @@
+<div class="game-container">
+  <div class="game-header">
+    <button class="btn-danger" (click)="backToLobby()">Back to Lobby</button>
+    <h2>{{ getStatusText() }}</h2>
+    <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
+  </div>
+
+  <div class="game-content">
+    <div class="game-info">
+      <div *ngIf="gameState?.snakes" class="scores">
+        <div *ngFor="let snake of gameState!.snakes" class="score-item">
+          <div class="score-color" [style.background-color]="snake.color"></div>
+          <span>{{ snake.username || 'Player' }}: {{ snake.score }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="!gameState || gameState?.status === 'waiting'" class="ready-section">
+        <div *ngIf="!gameState" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading game...</p>
+        </div>
+        
+        <div *ngIf="gameState?.status === 'waiting'" class="waiting-state">
+          <h3 class="waiting-title">Waiting for Players</h3>
+          
+          <div *ngIf="!isSpectator" class="players-status">
+            <div class="player-status-item" [class.ready]="getCurrentPlayerStatus()?.ready">
+              <div class="status-indicator" [class.active]="getCurrentPlayerStatus()?.ready"></div>
+              <span class="player-name">{{ getCurrentPlayerStatus()?.username || 'You' }}</span>
+              <span class="status-badge" *ngIf="getCurrentPlayerStatus()?.ready">✓ Ready</span>
+              <span class="status-badge waiting" *ngIf="!getCurrentPlayerStatus()?.ready">Waiting...</span>
+            </div>
+            
+            <div class="player-status-item" [class.ready]="getOtherPlayer()?.ready">
+              <div class="status-indicator" [class.active]="getOtherPlayer()?.ready"></div>
+              <span class="player-name">{{ getOtherPlayer()?.username || 'Opponent' }}</span>
+              <span class="status-badge" *ngIf="getOtherPlayer()?.ready">✓ Ready</span>
+              <span class="status-badge waiting" *ngIf="!getOtherPlayer()?.ready">Waiting...</span>
+            </div>
+          </div>
+          
+          <div *ngIf="!isSpectator" class="ready-action">
+            <p class="ready-prompt" *ngIf="!isReady">
+              Click the button below when you're ready to start:
+            </p>
+            <p class="ready-prompt ready-text" *ngIf="isReady">
+              You're ready! Waiting for {{ getOtherPlayer()?.username || 'opponent' }}...
+            </p>
+            <button 
+              class="btn-ready" 
+              [class.btn-ready-active]="isReady"
+              [class.btn-ready-inactive]="!isReady"
+              (click)="playerReady()"
+              [disabled]="isReady"
+            >
+              <span *ngIf="!isReady">🎮 Click to Ready</span>
+              <span *ngIf="isReady">✓ Ready!</span>
+            </button>
+          </div>
+          
+          <div *ngIf="isSpectator" class="spectator-waiting">
+            <p>👁️ Waiting for players to be ready...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="canvas-container">
+      <canvas #gameCanvas class="game-canvas"></canvas>
+      
+      <!-- Game Over Overlay -->
+      <div *ngIf="gameState?.status === 'finished'" class="game-over-overlay">
+        <div class="game-over-modal">
+          <div class="game-over-icon">🎮</div>
+          <h2>Game Over!</h2>
+          <div class="winner-info">
+            <p *ngIf="gameState && gameState.winner && gameState.winner !== 'tie'" class="winner-text">
+              <span class="winner-label">Winner:</span>
+              <span class="winner-name">{{ getWinnerUsername() }}</span>
+            </p>
+            <p *ngIf="gameState && gameState.winner === 'tie'" class="tie-text">It's a tie! 🎉</p>
+          </div>
+          
+          <div *ngIf="!isSpectator" class="rematch-section">
+            <p *ngIf="!isRematchReady" class="rematch-prompt">Click to request rematch:</p>
+            <p *ngIf="isRematchReady && rematchCountdown === 0" class="rematch-waiting">Waiting for other player...</p>
+            <p *ngIf="rematchCountdown > 0" class="rematch-countdown">Rematch starting in: {{ rematchCountdown }}</p>
+            <button 
+              *ngIf="!isRematchReady"
+              class="btn-success btn-rematch" 
+              (click)="requestRematch()"
+            >
+              🔄 Rematch
+            </button>
+          </div>
+          
+          <button class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-info">
+      <h4>Controls</h4>
+      <p *ngIf="!isSpectator && gameState?.status === 'playing'">Use arrow keys or WASD to move your snake</p>
+      <p *ngIf="!isSpectator && gameState?.status !== 'playing'">Game controls will appear when the game starts</p>
+      <p *ngIf="isSpectator">You are watching this game</p>
+      
+      <!-- Touch controls for mobile/tablet -->
+      <div *ngIf="!isSpectator && gameState?.status === 'playing'" class="touch-controls">
+        <button 
+          class="btn-control up" 
+          (touchstart)="handleTouchMove('up'); $event.preventDefault()" 
+          (touchend)="$event.preventDefault()"
+          (mousedown)="handleTouchMove('up')"
+        >
+          ↑
+        </button>
+        <button 
+          class="btn-control left" 
+          (touchstart)="handleTouchMove('left'); $event.preventDefault()" 
+          (touchend)="$event.preventDefault()"
+          (mousedown)="handleTouchMove('left')"
+        >
+          ←
+        </button>
+        <button 
+          class="btn-control down" 
+          (touchstart)="handleTouchMove('down'); $event.preventDefault()" 
+          (touchend)="$event.preventDefault()"
+          (mousedown)="handleTouchMove('down')"
+        >
+          ↓
+        </button>
+        <button 
+          class="btn-control right" 
+          (touchstart)="handleTouchMove('right'); $event.preventDefault()" 
+          (touchend)="$event.preventDefault()"
+          (mousedown)="handleTouchMove('right')"
+        >
+          →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
