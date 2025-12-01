@@ -19,6 +19,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   gameRequests: any[] = [];
   pendingRequests: any[] = [];
   currentPlayer: Player | null = null;
+  showModeSelection: boolean = false;
   showUsernameEdit: boolean = false;
   editUsernameValue: string = '';
   errorMessage: string = '';
@@ -60,6 +61,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
         // If we have a player, we're connected
         if (player) {
           this.isConnected = true;
+          // Show mode selection if not already in lobby
+          if (!this.showModeSelection && this.players.length === 0) {
+            this.showModeSelection = true;
+          }
         } else if (savedUsername && !this.isConnected) {
           // Not connected but have username - auto-connect
           // Use setTimeout to avoid race condition
@@ -85,6 +90,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
             const bTime = new Date(b.joinedAt || 0).getTime();
             return aTime - bTime;
           });
+        // Hide mode selection once we're in lobby
+        if (this.players.length > 0) {
+          this.showModeSelection = false;
+        }
       })
     );
 
@@ -147,10 +156,20 @@ export class LobbyComponent implements OnInit, OnDestroy {
       localStorage.setItem(this.USERNAME_STORAGE_KEY, trimmedUsername);
       this.username = trimmedUsername; // Ensure username is set
       this.gameService.connect(trimmedUsername);
-      // joinLobby will be called automatically after 'connected' message
+      // Mode selection will be shown after 'connected' message
       this.isConnected = true;
       this.showUsernameEdit = false;
     }
+  }
+
+  selectSinglePlayer(): void {
+    this.showModeSelection = false;
+    this.gameService.startSinglePlayer();
+  }
+
+  selectMultiplayer(): void {
+    this.showModeSelection = false;
+    this.gameService.joinLobby();
   }
 
   editUsername(): void {

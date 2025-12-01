@@ -23,7 +23,7 @@ func (gm *Manager) RemovePlayer(playerID string) {
 
 	for gameID, game := range gm.Games {
 		game.Mutex.Lock()
-		if game.Player1.ID == playerID || game.Player2.ID == playerID {
+		if game.Player1.ID == playerID || (game.Player2 != nil && game.Player2.ID == playerID) {
 			isActive := game.IsActive
 			var disconnectedPlayer, otherPlayer *models.Player
 			if game.Player1.ID == playerID {
@@ -31,7 +31,7 @@ func (gm *Manager) RemovePlayer(playerID string) {
 				otherPlayer = game.Player2
 				// Clear disconnected player's Send channel to mark as inactive
 				game.Player1.Send = nil
-			} else {
+			} else if game.Player2 != nil && game.Player2.ID == playerID {
 				disconnectedPlayer = game.Player2
 				otherPlayer = game.Player1
 				// Clear disconnected player's Send channel to mark as inactive
@@ -41,7 +41,8 @@ func (gm *Manager) RemovePlayer(playerID string) {
 			if isActive {
 				gm.endGame(game, "disconnect", game.State)
 			}
-			if otherPlayer != nil && disconnectedPlayer != nil {
+			// Only send disconnect message if it's a multiplayer game
+			if otherPlayer != nil && disconnectedPlayer != nil && !game.IsSinglePlayer {
 				if isActive {
 					gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
 						"game_id": gameID,

@@ -290,6 +290,10 @@ export class GameService {
             rematchRequesterId: undefined,
             rematchRequesterName: undefined
           });
+          // Navigate to game if we have a game ID (for single player games)
+          if (message.data?.id) {
+            this.router.navigate(['/game', message.data.id]);
+          }
           break;
         case 'game_over':
           this.currentGameState$.next({
@@ -375,6 +379,10 @@ export class GameService {
 
   joinLobby(): void {
     this.wsService.send({ type: 'join_lobby' });
+  }
+
+  startSinglePlayer(): void {
+    this.wsService.send({ type: 'start_single_player' });
   }
 
   leaveLobby(): void {

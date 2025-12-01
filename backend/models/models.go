@@ -51,12 +51,13 @@ type Player struct {
 }
 
 type Game struct {
-	ID         string
-	Player1    *Player
-	Player2    *Player
-	State      *GameState
-	Ticker     *time.Ticker
-	Mutex      sync.RWMutex
-	IsActive   bool
-	Spectators map[string]*Player
+	ID             string
+	Player1        *Player
+	Player2        *Player // nil for single player games
+	State          *GameState
+	Ticker         *time.Ticker
+	Mutex          sync.RWMutex
+	IsActive       bool
+	IsSinglePlayer bool
+	Spectators     map[string]*Player
 }

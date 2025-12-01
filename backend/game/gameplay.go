@@ -20,16 +20,22 @@ func (gm *Manager) PlayerReady(player *models.Player, gameID string) {
 	game.Mutex.Lock()
 	if game.Player1.ID == player.ID {
 		game.Player1.Ready = true
-	} else if game.Player2.ID == player.ID {
+	} else if game.Player2 != nil && game.Player2.ID == player.ID {
 		game.Player2.Ready = true
 	}
 
-	game.State.Players = []models.PlayerStatus{
-		{ID: game.Player1.ID, Username: game.Player1.Username, Ready: game.Player1.Ready},
-		{ID: game.Player2.ID, Username: game.Player2.Username, Ready: game.Player2.Ready},
+	if game.IsSinglePlayer {
+		game.State.Players = []models.PlayerStatus{
+			{ID: game.Player1.ID, Username: game.Player1.Username, Ready: game.Player1.Ready},
+		}
+	} else {
+		game.State.Players = []models.PlayerStatus{
+			{ID: game.Player1.ID, Username: game.Player1.Username, Ready: game.Player1.Ready},
+			{ID: game.Player2.ID, Username: game.Player2.Username, Ready: game.Player2.Ready},
+		}
 	}
 
-	bothReady := game.Player1.Ready && game.Player2.Ready
+	bothReady := game.Player1.Ready && (game.IsSinglePlayer || (game.Player2 != nil && game.Player2.Ready))
 	gameState := game.State
 	game.Mutex.Unlock()
 
@@ -118,7 +124,7 @@ func (gm *Manager) HandlePlayerMove(player *models.Player, gameID string, direct
 	}
 
 	game.Mutex.RLock()
-	isPlayer := game.Player1.ID == player.ID || game.Player2.ID == player.ID
+	isPlayer := game.Player1.ID == player.ID || (game.Player2 != nil && game.Player2.ID == player.ID)
 	game.Mutex.RUnlock()
 
 	if !isPlayer {
@@ -215,6 +221,10 @@ func (gm *Manager) gameLoop(game *models.Game) {
 		if winner != "" {
 			gameState := game.State
 			game.Mutex.Unlock()
+			// For single player, "game_over" means player lost
+			if winner == "game_over" {
+				gameState.Winner = "" // No winner in single player loss
+			}
 			gm.endGame(game, winner, gameState)
 			return
 		}
@@ -226,6 +236,22 @@ func (gm *Manager) gameLoop(game *models.Game) {
 }
 
 func (gm *Manager) checkCollisions(game *models.Game) string {
+	// Single player: only check self-collision
+	if game.IsSinglePlayer {
+		if len(game.State.Snakes) == 0 {
+			return ""
+		}
+		head := game.State.Snakes[0].Body[0]
+		for j := 1; j < len(game.State.Snakes[0].Body); j++ {
+			if head.X == game.State.Snakes[0].Body[j].X && head.Y == game.State.Snakes[0].Body[j].Y {
+				// Game over - player lost
+				return "game_over"
+			}
+		}
+		return ""
+	}
+
+	// Multiplayer: check all collisions
 	for i := range game.State.Snakes {
 		head := game.State.Snakes[i].Body[0]
 		for j := 1; j < len(game.State.Snakes[i].Body); j++ {
@@ -273,7 +299,9 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 	game.State.Status = "finished"
 	game.State.Winner = winner
 	game.Player1.Ready = false
-	game.Player2.Ready = false
+	if game.Player2 != nil {
+		game.Player2.Ready = false
+	}
 
 	// Get player references before unlocking
 	player1 := game.Player1
@@ -291,7 +319,7 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 			gm.AddToLobby(player1)
 		}
 	}
-	if player2.Send != nil {
+	if player2 != nil && player2.Send != nil {
 		// Check if player is not already in lobby
 		if _, exists := gm.Lobby.Get(player2.ID); !exists {
 			gm.AddToLobby(player2)
@@ -335,8 +363,10 @@ func (gm *Manager) broadcastToPlayers(game *models.Game, msgType string, data ma
 	// Send to Player1 (prioritize WebSocket, fallback to WebRTC)
 	gm.sendMessage(game.Player1, msgType, data)
 
-	// Send to Player2 (prioritize WebSocket, fallback to WebRTC)
-	gm.sendMessage(game.Player2, msgType, data)
+	// Send to Player2 if exists (multiplayer only)
+	if game.Player2 != nil {
+		gm.sendMessage(game.Player2, msgType, data)
+	}
 
 	// Send to spectators (prioritize WebSocket, fallback to WebRTC)
 	game.Mutex.RLock()

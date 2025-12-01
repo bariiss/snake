@@ -37,6 +37,7 @@ const (
 	MSG_PEER_OFFER          = "peer_offer"
 	MSG_PEER_ANSWER         = "peer_answer"
 	MSG_PEER_ICE_CANDIDATE  = "peer_ice_candidate"
+	MSG_START_SINGLE_PLAYER = "start_single_player"
 )
 
 type Direction int

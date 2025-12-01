@@ -64,5 +64,7 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		if gameID, ok := msg["game_id"].(string); ok {
 			gm.HandleRematchAccept(player, gameID)
 		}
+	case constants.MSG_START_SINGLE_PLAYER:
+		gm.StartSinglePlayerGame(player)
 	}
 }
