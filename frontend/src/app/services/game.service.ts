@@ -395,14 +395,25 @@ export class GameService {
             this.connectionError$.next('Username already in use. Please choose another name.');
             this.wsService.disconnect();
           } else if (message.code === 'INVALID_TOKEN' || message.code === 'PLAYER_NOT_FOUND') {
-            // Token is invalid or player not found - clear token and redirect to login
-            localStorage.removeItem('snake_game_token');
-            this.currentPlayer$.next(null);
-            this.connectionError$.next(message.message || 'Session expired. Please login again.');
-            this.wsService.disconnect();
-            setTimeout(() => {
-              this.router.navigate(['/login']);
-            }, 1000);
+            // Token is invalid or player not found - try to reconnect with access token if available
+            const accessToken = localStorage.getItem('snake_game_access_token');
+            if (accessToken) {
+              // Try to reconnect with access token
+              console.log('Token expired, attempting to reconnect with access token...');
+              this.wsService.disconnect();
+              setTimeout(() => {
+                this.connectWithToken(accessToken);
+              }, 500);
+            } else {
+              // No access token, clear token and redirect to login
+              localStorage.removeItem('snake_game_token');
+              this.currentPlayer$.next(null);
+              this.connectionError$.next(message.message || 'Session expired. Please login again.');
+              this.wsService.disconnect();
+              setTimeout(() => {
+                this.router.navigate(['/login']);
+              }, 1000);
+            }
           } else {
             console.error('Game error:', message.message);
             // Show error banner for other errors
@@ -616,10 +627,16 @@ export class GameService {
           this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
           this.connectionStatus$.next({ step: 'disconnected', completed: true });
           
+          // Clear token and show success message before resetting state
+          localStorage.removeItem('snake_game_token');
+          this.showInfoBanner('Successfully logged out', 'info');
+          
           // Reset state after showing disconnected
           setTimeout(() => {
             this.resetState();
             this.connectionStatus$.next({ step: 'idle', completed: false });
+            // Navigate to login after showing success message
+            this.router.navigate(['/login']);
           }, 500);
         }, 300);
       }, 300);
@@ -635,6 +652,7 @@ export class GameService {
     this.activeGames$.next([]);
     this.isSpectator$.next(false);
     this.clearBanner();
+    this.clearConnectionError(); // Clear any connection errors
     // Reset connection status to idle (not connecting, so loading won't show)
     this.connectionStatus$.next({ step: 'idle', completed: false });
   }

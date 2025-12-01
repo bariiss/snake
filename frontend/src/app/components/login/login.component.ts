@@ -57,11 +57,28 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getConnectionError().subscribe(error => {
         if (error) {
+          // Don't show error if it's a logout message
+          if (error.includes('Successfully logged out') || error.includes('logged out')) {
+            this.errorMessage = '';
+            this.isConnecting = false;
+            this.gameService.clearConnectionError();
+            return;
+          }
+          
           this.errorMessage = error;
           this.isConnecting = false;
-          // If error occurs with token, clear token and allow manual login
+          // If error occurs with token, try access token first, then clear and allow manual login
           if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN') || error.includes('PLAYER_NOT_FOUND')) {
+            const accessToken = localStorage.getItem('snake_game_access_token');
+            if (accessToken && accessToken !== token) {
+              // Try to reconnect with access token
+              this.isConnecting = true;
+              this.connectWithToken(accessToken);
+              return;
+            }
+            // No access token or same as current token, clear both and allow manual login
             localStorage.removeItem('snake_game_token');
+            localStorage.removeItem('snake_game_access_token');
             this.errorMessage = 'Session expired. Please login again.';
             if (savedUsername) {
               this.username = savedUsername;
@@ -76,8 +93,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getBanner().subscribe(banner => {
         if (banner && banner.type === 'warning' && (banner.message.includes('Player not found') || banner.message.includes('Invalid token'))) {
-          // Token is invalid, clear it
+          // Token is invalid, try access token first
+          const accessToken = localStorage.getItem('snake_game_access_token');
+          if (accessToken && accessToken !== token) {
+            // Try to reconnect with access token
+            this.isConnecting = true;
+            this.connectWithToken(accessToken);
+            return;
+          }
+          // No access token or same as current token, clear both
           localStorage.removeItem('snake_game_token');
+          localStorage.removeItem('snake_game_access_token');
           this.isConnecting = false;
           this.errorMessage = 'Session expired. Please login again.';
           if (savedUsername) {
