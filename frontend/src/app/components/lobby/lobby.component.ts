@@ -100,7 +100,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
           this.errorMessage = error;
           this.isConnected = false;
           this.releaseSessionLock();
-          this.showUsernameEdit = true;
+          // Don't show username edit modal on connection error
+          // User should manually click "Edit" if they want to change username
+          this.showUsernameEdit = false;
           this.gameService.clearConnectionError();
         }
       })
@@ -145,14 +147,45 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   updateUsername(): void {
     if (this.editUsernameValue.trim()) {
-      this.username = this.editUsernameValue.trim();
+      const newUsername = this.editUsernameValue.trim();
+      
+      // Check if new username is same as current username
+      if (newUsername.toLowerCase() === (this.currentPlayer?.username || this.username).toLowerCase()) {
+        this.showUsernameEdit = false;
+        this.editUsernameValue = '';
+        return;
+      }
+      
+      // Check if new username already exists in lobby
+      const duplicate = this.players.some(
+        player => player.username?.toLowerCase() === newUsername.toLowerCase()
+      );
+      if (duplicate) {
+        this.errorMessage = 'Username already in use. Please choose another.';
+        return;
+      }
+      
+      this.username = newUsername;
       localStorage.setItem(this.USERNAME_STORAGE_KEY, this.username);
-      // Disconnect and reconnect with new username
-      this.disconnect();
+      
+      // Disconnect first to free up old username, then reconnect with new username
+      this.gameService.leaveLobby();
+      this.gameService.disconnect();
+      this.releaseSessionLock();
+      this.isConnected = false;
+      
+      // Wait a bit for backend to process disconnect before reconnecting
       setTimeout(() => {
-        this.connect();
-      }, 100);
+        if (this.acquireSessionLock()) {
+          this.gameService.connect(this.username);
+          this.isConnected = true;
+        } else {
+          this.errorMessage = 'Could not acquire session lock. Please try again.';
+        }
+      }, 500);
+      
       this.showUsernameEdit = false;
+      this.editUsernameValue = '';
     }
   }
 
