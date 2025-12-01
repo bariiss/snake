@@ -11,30 +11,39 @@ import (
 
 // UsernameExists checks if a username is already in use (in lobby, active games, or spectators)
 // Case-insensitive comparison
+// Only checks players with active connections (Send channel is not nil)
 func (gm *Manager) UsernameExists(username string) bool {
 	usernameLower := strings.ToLower(strings.TrimSpace(username))
 	if usernameLower == "" {
 		return false
 	}
 
-	// Check lobby (case-insensitive)
-	if gm.Lobby.ExistsByUsername(username) {
-		return true
+	// Check lobby (case-insensitive) - only players with active connections
+	for _, p := range gm.Lobby.Snapshot() {
+		if strings.EqualFold(p.Username, username) && p.Send != nil {
+			return true
+		}
 	}
 
-	// Check active games and spectators
+	// Check active games and spectators - only players with active connections
 	gm.Mutex.RLock()
 	defer gm.Mutex.RUnlock()
 
 	for _, game := range gm.Games {
 		game.Mutex.RLock()
-		if strings.EqualFold(game.Player1.Username, username) || strings.EqualFold(game.Player2.Username, username) {
+		// Check Player1 - only if has active connection
+		if game.Player1 != nil && strings.EqualFold(game.Player1.Username, username) && game.Player1.Send != nil {
 			game.Mutex.RUnlock()
 			return true
 		}
-		// Check spectators
+		// Check Player2 - only if has active connection
+		if game.Player2 != nil && strings.EqualFold(game.Player2.Username, username) && game.Player2.Send != nil {
+			game.Mutex.RUnlock()
+			return true
+		}
+		// Check spectators - only if has active connection
 		for _, spectator := range game.Spectators {
-			if strings.EqualFold(spectator.Username, username) {
+			if strings.EqualFold(spectator.Username, username) && spectator.Send != nil {
 				game.Mutex.RUnlock()
 				return true
 			}
