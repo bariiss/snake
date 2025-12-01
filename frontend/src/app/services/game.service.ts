@@ -615,8 +615,11 @@ export class GameService {
       this.connectionStatus$.next({ step: 'disconnecting_peer', completed: true });
       this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
       
-      // Leave lobby BEFORE disconnecting WebSocket
-      this.leaveLobby();
+      // Only leave lobby if we're actually in the lobby (check if we have lobby players)
+      const hasLobbyPlayers = this.lobbyPlayers$.value && this.lobbyPlayers$.value.length > 0;
+      if (hasLobbyPlayers) {
+        this.leaveLobby();
+      }
       
       setTimeout(() => {
         this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: true });
@@ -629,15 +632,20 @@ export class GameService {
           this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
           this.connectionStatus$.next({ step: 'disconnected', completed: true });
           
-          // Clear token and show success message before resetting state
+          // Clear all tokens and user data
           localStorage.removeItem('snake_game_token');
+          localStorage.removeItem('snake_game_access_token');
+          localStorage.removeItem('snake_game_username');
+          
+          // Reset state before navigating
+          this.resetState();
+          
+          // Show success message
           this.showInfoBanner('Successfully logged out', 'info');
           
-          // Reset state after showing disconnected
+          // Navigate to login after showing success message
           setTimeout(() => {
-            this.resetState();
             this.connectionStatus$.next({ step: 'idle', completed: false });
-            // Navigate to login after showing success message
             this.router.navigate(['/login']);
           }, 500);
         }, 300);
@@ -657,6 +665,8 @@ export class GameService {
     this.clearConnectionError(); // Clear any connection errors
     // Reset connection status to idle (not connecting, so loading won't show)
     this.connectionStatus$.next({ step: 'idle', completed: false });
+    // Clear WebSocket player ID
+    this.wsService.setPlayerId('');
   }
 }
 

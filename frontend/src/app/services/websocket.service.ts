@@ -114,10 +114,18 @@ export class WebSocketService {
   disconnect(): void {
     this.shouldReconnect = false;
     if (this.ws) {
-      this.ws.close(1000, 'Normal closure');
+      // Close WebSocket connection properly
+      try {
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+          this.ws.close(1000, 'Normal closure');
+        }
+      } catch (error) {
+        console.warn('Error closing WebSocket:', error);
+      }
       this.ws = null;
     }
     this.playerId = null;
+    this.token = null;
   }
 
   isConnected(): boolean {
