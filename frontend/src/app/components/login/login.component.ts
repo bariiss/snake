@@ -103,6 +103,10 @@ export class LoginComponent implements OnInit, OnDestroy {
               return;
             }
             // No access token or same as current token, clear both and allow manual login
+            if (this.connectionTimeout) {
+              clearTimeout(this.connectionTimeout);
+              this.connectionTimeout = null;
+            }
             localStorage.removeItem('snake_game_token');
             localStorage.removeItem('snake_game_access_token');
             this.errorMessage = 'Session expired. Please login again.';
@@ -129,6 +133,10 @@ export class LoginComponent implements OnInit, OnDestroy {
             return;
           }
           // No access token or same as current token, clear both
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
           localStorage.removeItem('snake_game_token');
           localStorage.removeItem('snake_game_access_token');
           this.isConnecting = false;
@@ -140,22 +148,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Listen for successful connection
-    this.subscriptions.add(
-      this.gameService.getCurrentPlayer().subscribe(player => {
-        if (player && this.isConnecting) {
-          // Connected successfully, clear timeout and navigate to mode selection
-          if (this.connectionTimeout) {
-            clearTimeout(this.connectionTimeout);
-            this.connectionTimeout = null;
-          }
-          this.isConnecting = false;
-          setTimeout(() => {
-            this.router.navigate(['/mode-selection']);
-          }, 100);
-        }
-      })
-    );
   }
 
   ngOnDestroy(): void {
