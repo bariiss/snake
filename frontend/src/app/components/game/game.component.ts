@@ -84,15 +84,23 @@ export class GameComponent implements OnInit, OnDestroy {
     };
 
     // Request game state if we have a gameId (e.g., on page refresh)
-    // Wait a bit for WebSocket to be ready, then request game state
+    // Wait for WebSocket to be ready and player to be connected
     if (this.gameId) {
-      setTimeout(() => {
-        // If we don't have game state yet, request it from backend
-        if (!this.gameState) {
-          // Send a request to get current game state
-          this.gameService.requestGameState(this.gameId);
-        }
-      }, 500);
+      // Check if WebSocket is connected and player exists
+      this.subscriptions.add(
+        this.gameService.getCurrentPlayer().subscribe(player => {
+          if (player && !this.gameState) {
+            // Player is connected, wait a bit for WebSocket to be fully ready
+            setTimeout(() => {
+              if (!this.gameState) {
+                // Send a request to get current game state
+                console.log('Requesting game state for game:', this.gameId);
+                this.gameService.requestGameState(this.gameId);
+              }
+            }, 500);
+          }
+        })
+      );
     }
 
     // Subscribe to game state updates

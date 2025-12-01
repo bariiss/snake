@@ -469,7 +469,20 @@ export class GameService {
   }
 
   requestGameState(gameId: string): void {
-    this.wsService.send({ type: 'get_game_state', game_id: gameId });
+    // Check if WebSocket is connected before sending
+    if (this.wsService.isConnected()) {
+      console.log('Requesting game state for game:', gameId);
+      this.wsService.send({ type: 'get_game_state', game_id: gameId });
+    } else {
+      console.warn('WebSocket not connected, cannot request game state');
+      // Wait a bit and try again
+      setTimeout(() => {
+        if (this.wsService.isConnected()) {
+          console.log('Retrying game state request for game:', gameId);
+          this.wsService.send({ type: 'get_game_state', game_id: gameId });
+        }
+      }, 1000);
+    }
   }
 
   leaveLobby(): void {
