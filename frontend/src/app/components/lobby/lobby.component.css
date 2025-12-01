@@ -1,27 +1,28 @@
 .lobby-container {
   max-width: 1400px;
-  width: 1400px;
-  min-width: 1400px;
+  width: 1400px !important;
+  min-width: 1400px !important;
   margin: 0 auto;
   padding: 2rem;
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+  display: block;
 }
 
 @media (max-width: 1500px) {
   .lobby-container {
-    width: 95%;
-    min-width: 95%;
-    max-width: 95%;
+    width: 95% !important;
+    min-width: 95% !important;
+    max-width: 95% !important;
   }
 }
 
 @media (max-width: 1200px) {
   .lobby-container {
-    width: 98%;
-    min-width: 98%;
-    max-width: 98%;
+    width: 98% !important;
+    min-width: 98% !important;
+    max-width: 98% !important;
     padding: 1.5rem;
   }
 }
@@ -144,9 +145,10 @@
   padding: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   border: 1px solid #2a2a4a;
-  width: 100%;
-  min-width: 100%;
+  width: 100% !important;
+  min-width: 100% !important;
   box-sizing: border-box;
+  display: block;
 }
 
 .card.lobby-card h1 {
