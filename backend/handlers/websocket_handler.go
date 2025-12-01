@@ -59,9 +59,20 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	username = strings.TrimSpace(username)
 
-	// Check if username already exists
+	// Check if username already exists and disconnect old connection if same username
+	existingPlayer := h.gameManager.FindPlayerByUsername(username)
+	if existingPlayer != nil && existingPlayer.Send != nil {
+		// Same username is already connected - close old connection
+		log.Printf("Username %s already connected, closing old connection", username)
+		close(existingPlayer.Send)
+		existingPlayer.Send = nil
+		// Remove from lobby and games
+		h.gameManager.RemovePlayer(existingPlayer.ID)
+	}
+
+	// Check again if username exists (after cleanup)
 	if h.gameManager.UsernameExists(username) {
-		log.Printf("Username %s already exists, closing connection", username)
+		log.Printf("Username %s still in use after cleanup, closing connection", username)
 		errorMsg := map[string]interface{}{
 			"type":    "error",
 			"code":    "USERNAME_EXISTS",

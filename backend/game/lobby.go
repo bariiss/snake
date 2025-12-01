@@ -54,6 +54,48 @@ func (gm *Manager) UsernameExists(username string) bool {
 	return false
 }
 
+// FindPlayerByUsername finds a player by username (case-insensitive)
+// Returns the player if found, nil otherwise
+func (gm *Manager) FindPlayerByUsername(username string) *models.Player {
+	usernameLower := strings.ToLower(strings.TrimSpace(username))
+	if usernameLower == "" {
+		return nil
+	}
+
+	// Check lobby
+	for _, p := range gm.Lobby.Snapshot() {
+		if strings.EqualFold(p.Username, username) {
+			return p
+		}
+	}
+
+	// Check active games
+	gm.Mutex.RLock()
+	defer gm.Mutex.RUnlock()
+
+	for _, game := range gm.Games {
+		game.Mutex.RLock()
+		if game.Player1 != nil && strings.EqualFold(game.Player1.Username, username) {
+			game.Mutex.RUnlock()
+			return game.Player1
+		}
+		if game.Player2 != nil && strings.EqualFold(game.Player2.Username, username) {
+			game.Mutex.RUnlock()
+			return game.Player2
+		}
+		// Check spectators
+		for _, spectator := range game.Spectators {
+			if strings.EqualFold(spectator.Username, username) {
+				game.Mutex.RUnlock()
+				return spectator
+			}
+		}
+		game.Mutex.RUnlock()
+	}
+
+	return nil
+}
+
 func (gm *Manager) AddToLobby(player *models.Player) {
 	if added := gm.Lobby.Add(player); !added {
 		log.Printf("Player %s (%s) already in lobby", player.ID, player.Username)
