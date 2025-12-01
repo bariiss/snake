@@ -97,7 +97,7 @@
                     </button>
                   </div>
                   <div *ngIf="hasGameRequestFrom(player.id)" class="request-status incoming">
-                    <span class="status-text">Request received</span>
+                    <span class="status-text">Waiting for {{ getGameRequestFrom(player.id)?.from_player?.username }} to respond...</span>
                   </div>
                 </div>
               </div>
@@ -123,7 +123,7 @@
                     <button class="btn-success btn-large" (click)="acceptGameRequest(request.game_id)">
                       ✓ Accept
                     </button>
-                    <button class="btn-danger btn-large" (click)="rejectGameRequest(request.game_id)">
+                    <button class="btn-danger btn-reject" (click)="rejectGameRequest(request.game_id)">
                       ✕ Reject
                     </button>
                   </div>

@@ -53,25 +53,88 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  opacity: 0.1;
+  opacity: 0.15;
   background-image: 
-    /* Snake 1 - Red */
-    linear-gradient(45deg, transparent 0%, transparent 40%, #ff0000 40%, #ff0000 45%, transparent 45%, transparent 50%, #ff0000 50%, #ff0000 55%, transparent 55%, transparent 60%, #ff0000 60%, #ff0000 65%, transparent 65%),
-    /* Snake 2 - Blue */
-    linear-gradient(-45deg, transparent 0%, transparent 40%, #0000ff 40%, #0000ff 45%, transparent 45%, transparent 50%, #0000ff 50%, #0000ff 55%, transparent 55%, transparent 60%, #0000ff 60%, #0000ff 65%, transparent 65%),
-    /* Snake 3 - Green */
-    linear-gradient(30deg, transparent 0%, transparent 40%, #00ff00 40%, #00ff00 45%, transparent 45%, transparent 50%, #00ff00 50%, #00ff00 55%, transparent 55%, transparent 60%, #00ff00 60%, #00ff00 65%, transparent 65%);
-  background-size: 200px 200px, 250px 250px, 180px 180px;
-  background-position: 0% 0%, 50% 50%, 100% 100%;
-  animation: snakeMove 20s linear infinite;
+    /* Snake 1 - Red (longer, wavy) */
+    linear-gradient(45deg, 
+      transparent 0%, transparent 35%, 
+      #ff4444 35%, #ff4444 38%, 
+      transparent 38%, transparent 42%, 
+      #ff6666 42%, #ff6666 45%, 
+      transparent 45%, transparent 48%, 
+      #ff4444 48%, #ff4444 51%, 
+      transparent 51%, transparent 54%, 
+      #ff6666 54%, #ff6666 57%, 
+      transparent 57%, transparent 60%, 
+      #ff4444 60%, #ff4444 63%, 
+      transparent 63%, transparent 66%, 
+      #ff6666 66%, #ff6666 69%, 
+      transparent 69%, transparent 72%, 
+      #ff4444 72%, #ff4444 75%, 
+      transparent 75%),
+    /* Snake 2 - Blue (curved path) */
+    linear-gradient(-35deg, 
+      transparent 0%, transparent 38%, 
+      #4488ff 38%, #4488ff 41%, 
+      transparent 41%, transparent 44%, 
+      #6699ff 44%, #6699ff 47%, 
+      transparent 47%, transparent 50%, 
+      #4488ff 50%, #4488ff 53%, 
+      transparent 53%, transparent 56%, 
+      #6699ff 56%, #6699ff 59%, 
+      transparent 59%, transparent 62%, 
+      #4488ff 62%, #4488ff 65%, 
+      transparent 65%, transparent 68%, 
+      #6699ff 68%, #6699ff 71%, 
+      transparent 71%),
+    /* Snake 3 - Green (sinuous) */
+    linear-gradient(55deg, 
+      transparent 0%, transparent 32%, 
+      #44ff88 32%, #44ff88 35%, 
+      transparent 35%, transparent 39%, 
+      #66ffaa 39%, #66ffaa 42%, 
+      transparent 42%, transparent 46%, 
+      #44ff88 46%, #44ff88 49%, 
+      transparent 49%, transparent 53%, 
+      #66ffaa 53%, #66ffaa 56%, 
+      transparent 56%, transparent 60%, 
+      #44ff88 60%, #44ff88 63%, 
+      transparent 63%, transparent 67%, 
+      #66ffaa 67%, #66ffaa 70%, 
+      transparent 70%),
+    /* Snake 4 - Yellow (wavy) */
+    linear-gradient(-50deg, 
+      transparent 0%, transparent 40%, 
+      #ffaa44 40%, #ffaa44 43%, 
+      transparent 43%, transparent 47%, 
+      #ffcc66 47%, #ffcc66 50%, 
+      transparent 50%, transparent 54%, 
+      #ffaa44 54%, #ffaa44 57%, 
+      transparent 57%, transparent 61%, 
+      #ffcc66 61%, #ffcc66 64%, 
+      transparent 64%, transparent 68%, 
+      #ffaa44 68%, #ffaa44 71%, 
+      transparent 71%);
+  background-size: 300px 300px, 280px 280px, 320px 320px, 260px 260px;
+  background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
+  animation: snakeSlither 25s ease-in-out infinite;
 }
 
-@keyframes snakeMove {
+@keyframes snakeSlither {
   0% {
-    background-position: 0% 0%, 50% 50%, 100% 100%;
+    background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
+  }
+  25% {
+    background-position: 25% 25%, 50% 50%, 75% 75%, 0% 0%;
+  }
+  50% {
+    background-position: 50% 50%, 75% 75%, 0% 0%, 25% 25%;
+  }
+  75% {
+    background-position: 75% 75%, 0% 0%, 25% 25%, 50% 50%;
   }
   100% {
-    background-position: 100% 100%, 0% 0%, 50% 50%;
+    background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
   }
 }
 
@@ -459,6 +522,15 @@
   font-weight: 600;
   border-radius: 8px;
   min-width: 90px;
+  white-space: nowrap;
+}
+
+.btn-reject {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+  min-width: 70px;
   white-space: nowrap;
 }
 
