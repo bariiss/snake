@@ -154,8 +154,9 @@
 }
 
 .card.lobby-card:has(.connect-section) {
-  max-width: 420px;
-  width: 100%;
+  max-width: 420px !important;
+  width: 100% !important;
+  min-width: auto !important;
   margin: 0 auto;
   padding: 2.5rem 2rem;
   background: rgba(22, 33, 62, 0.85);
