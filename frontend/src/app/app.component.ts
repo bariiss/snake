@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { GameService } from './services/game.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -13,10 +15,23 @@ import { RouterOutlet } from '@angular/router';
         <div class="loading-content">
           <div class="snake-emoji">🐍</div>
           <h1 class="game-title">Slither Arena</h1>
-          <div class="loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
+          <div class="connection-steps">
+            <div class="step" [class.active]="currentStep === 'connecting'" [class.completed]="isStepCompleted('connecting')">
+              <span class="step-icon">{{ isStepCompleted('connecting') ? '✓' : '⟳' }}</span>
+              <span class="step-text">WebSocket bağlantısı kuruluyor...</span>
+            </div>
+            <div class="step" [class.active]="currentStep === 'connected'" [class.completed]="isStepCompleted('connected')">
+              <span class="step-icon">{{ isStepCompleted('connected') ? '✓' : (currentStep === 'connected' ? '⟳' : '○') }}</span>
+              <span class="step-text">Bağlantı kuruldu, kullanıcı bilgileri alınıyor...</span>
+            </div>
+            <div class="step" [class.active]="currentStep === 'loading_lobby'" [class.completed]="isStepCompleted('lobby_loaded')">
+              <span class="step-icon">{{ isStepCompleted('lobby_loaded') ? '✓' : (currentStep === 'loading_lobby' ? '⟳' : '○') }}</span>
+              <span class="step-text">Lobby durumu yükleniyor...</span>
+            </div>
+            <div class="step" [class.active]="currentStep === 'ready'" [class.completed]="isStepCompleted('ready')">
+              <span class="step-icon">{{ isStepCompleted('ready') ? '✓' : (currentStep === 'ready' ? '⟳' : '○') }}</span>
+              <span class="step-text">Oyun listesi alınıyor...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -99,43 +114,83 @@ import { RouterOutlet } from '@angular/router';
       }
     }
 
-    .loading-dots {
+    .connection-steps {
+      margin-top: 40px;
       display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      min-width: 300px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+      transition: all 0.3s ease;
+      opacity: 0.5;
+    }
+
+    .step.active {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .step.completed {
+      opacity: 1;
+      background: rgba(76, 175, 80, 0.2);
+    }
+
+    .step-icon {
+      font-size: 20px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
+      font-weight: bold;
     }
 
-    .loading-dots span {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: white;
-      animation: dotBounce 1.4s ease-in-out infinite;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    .step.completed .step-icon {
+      color: #4caf50;
+      animation: checkmark 0.3s ease;
     }
 
-    .loading-dots span:nth-child(1) {
-      animation-delay: 0s;
+    .step.active:not(.completed) .step-icon {
+      animation: spin 1s linear infinite;
     }
 
-    .loading-dots span:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .loading-dots span:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes dotBounce {
-      0%, 80%, 100% {
-        transform: translateY(0) scale(1);
-        opacity: 0.7;
+    @keyframes checkmark {
+      0% {
+        transform: scale(0);
       }
-      40% {
-        transform: translateY(-20px) scale(1.2);
-        opacity: 1;
+      50% {
+        transform: scale(1.2);
       }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .step-text {
+      font-size: 0.95rem;
+      flex: 1;
     }
 
     @keyframes fadeOut {
@@ -169,15 +224,48 @@ import { RouterOutlet } from '@angular/router';
     }
   `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'Snake Game';
   isLoading = true;
+  currentStep = 'connecting';
+  completedSteps: string[] = [];
+  private subscriptions = new Subscription();
+
+  constructor(private gameService: GameService) {}
 
   ngOnInit() {
-    // Show loading screen for 2 seconds, then fade out
+    // Listen to connection status
+    this.subscriptions.add(
+      this.gameService.getConnectionStatus().subscribe(status => {
+        this.currentStep = status.step;
+        if (status.completed) {
+          if (!this.completedSteps.includes(status.step)) {
+            this.completedSteps.push(status.step);
+          }
+          // If ready, hide loading after a short delay
+          if (status.step === 'ready') {
+            setTimeout(() => {
+              this.isLoading = false;
+            }, 500);
+          }
+        }
+      })
+    );
+
+    // Fallback: hide loading after 5 seconds if no connection
     setTimeout(() => {
-      this.isLoading = false;
-    }, 2000);
+      if (this.isLoading && this.currentStep === 'connecting') {
+        this.isLoading = false;
+      }
+    }, 5000);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
+  }
+
+  isStepCompleted(step: string): boolean {
+    return this.completedSteps.includes(step);
   }
 }
 

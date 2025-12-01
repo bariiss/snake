@@ -61,6 +61,7 @@ export class GameService {
   private isSpectator$ = new BehaviorSubject<boolean>(false);
   private banner$ = new BehaviorSubject<{ type: 'info' | 'warning'; message: string } | null>(null);
   private connectionError$ = new BehaviorSubject<string | null>(null);
+  private connectionStatus$ = new BehaviorSubject<{ step: string; completed: boolean }>({ step: 'connecting', completed: false });
 
   constructor(
     private wsService: WebSocketService,
@@ -167,6 +168,7 @@ export class GameService {
     this.wsService.messages$.subscribe(message => {
       switch (message.type) {
         case 'connected':
+          this.connectionStatus$.next({ step: 'connected', completed: true });
           if (message.player) {
             this.currentPlayer$.next(message.player);
             this.wsService.setPlayerId(message.player.id);
@@ -176,10 +178,12 @@ export class GameService {
             }
             // Backend automatically adds player to lobby, so we don't need to call joinLobby()
             // But we can request games list
+            this.connectionStatus$.next({ step: 'loading_lobby', completed: false });
             this.listGames();
           }
           break;
         case 'lobby_status':
+          this.connectionStatus$.next({ step: 'lobby_loaded', completed: true });
           const normalizedPlayers = (message.players || []).map((player: any) => ({
             ...player,
             joinedAt: player.joinedAt || player.joined_at
@@ -187,6 +191,7 @@ export class GameService {
           this.lobbyPlayers$.next(normalizedPlayers);
           break;
         case 'games_list':
+          this.connectionStatus$.next({ step: 'ready', completed: true });
           this.activeGames$.next(message.games || []);
           break;
         case 'spectator_update':
@@ -363,6 +368,7 @@ export class GameService {
   }
 
   connect(username: string): void {
+    this.connectionStatus$.next({ step: 'connecting', completed: false });
     this.wsService.connect(username);
     // Player ID will be set when 'connected' message is received from backend
   }
@@ -471,6 +477,10 @@ export class GameService {
 
   getConnectionError(): Observable<string | null> {
     return this.connectionError$.asObservable();
+  }
+
+  getConnectionStatus(): Observable<{ step: string; completed: boolean }> {
+    return this.connectionStatus$.asObservable();
   }
 
   clearConnectionError(): void {
