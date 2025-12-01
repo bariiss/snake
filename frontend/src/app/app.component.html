@@ -1,0 +1,56 @@
+<div class="app-container">
+  <!-- Loading Screen -->
+  <div class="loading-screen" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="snake-emoji">🐍</div>
+      <h1 class="game-title">Slither Arena</h1>
+      <div class="connection-steps">
+        <!-- Connection Steps -->
+        <div *ngIf="!isDisconnecting()" class="steps-container">
+          <div class="step" [class.active]="currentStep === 'connecting'" [class.completed]="isStepCompleted('connecting')">
+            <span class="step-icon">{{ isStepCompleted('connecting') ? '✓' : '⟳' }}</span>
+            <span class="step-text">Establishing WebSocket connection...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'connected'" [class.completed]="isStepCompleted('connected')">
+            <span class="step-icon">{{ isStepCompleted('connected') ? '✓' : (currentStep === 'connected' ? '⟳' : '○') }}</span>
+            <span class="step-text">Connection established, retrieving user information...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'loading_lobby'" [class.completed]="isStepCompleted('lobby_loaded')">
+            <span class="step-icon">{{ isStepCompleted('lobby_loaded') ? '✓' : (currentStep === 'loading_lobby' ? '⟳' : '○') }}</span>
+            <span class="step-text">Loading lobby status...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'ready'" [class.completed]="isStepCompleted('ready')">
+            <span class="step-icon">{{ isStepCompleted('ready') ? '✓' : (currentStep === 'ready' ? '⟳' : '○') }}</span>
+            <span class="step-text">Retrieving game list...</span>
+          </div>
+        </div>
+        
+        <!-- Disconnection Steps -->
+        <div *ngIf="isDisconnecting()" class="steps-container">
+          <div class="step" [class.active]="currentStep === 'disconnecting_peer'" [class.completed]="isStepCompleted('disconnecting_peer')">
+            <span class="step-icon">{{ isStepCompleted('disconnecting_peer') ? '✓' : '⟳' }}</span>
+            <span class="step-text">Disconnecting peer-to-peer connection...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'disconnecting_websocket'" [class.completed]="isStepCompleted('disconnecting_websocket')">
+            <span class="step-icon">{{ isStepCompleted('disconnecting_websocket') ? '✓' : (currentStep === 'disconnecting_websocket' ? '⟳' : '○') }}</span>
+            <span class="step-text">Disconnecting WebSocket connection...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'disconnecting_lobby'" [class.completed]="isStepCompleted('disconnecting_lobby')">
+            <span class="step-icon">{{ isStepCompleted('disconnecting_lobby') ? '✓' : (currentStep === 'disconnecting_lobby' ? '⟳' : '○') }}</span>
+            <span class="step-text">Leaving lobby...</span>
+          </div>
+          <div class="step" [class.active]="currentStep === 'disconnected'" [class.completed]="isStepCompleted('disconnected')">
+            <span class="step-icon">{{ isStepCompleted('disconnected') ? '✓' : (currentStep === 'disconnected' ? '⟳' : '○') }}</span>
+            <span class="step-text">Connection closed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <div class="main-content" [class.fade-in]="!isLoading">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+

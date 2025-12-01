@@ -1,0 +1,41 @@
+http:
+  routers:
+    # Backend router for WebSocket
+    snake-backend-ws-router:
+      rule: "Host(`snake.li1.nl`) && PathPrefix(`/ws`)"
+      entryPoints:
+        - websecure
+      service: snake-backend-service
+      tls:
+        certResolver: cloudflare
+
+    # Backend router for WebRTC peer signaling
+    snake-backend-webrtc-router:
+      rule: "Host(`snake.li1.nl`) && PathPrefix(`/webrtc/peer/`)"
+      entryPoints:
+        - websecure
+      service: snake-backend-service
+      tls:
+        certResolver: cloudflare
+
+    # Frontend router
+    snake-frontend-router:
+      rule: "Host(`snake.li1.nl`)"
+      entryPoints:
+        - websecure
+      service: snake-frontend-service
+      tls:
+        certResolver: cloudflare
+      priority: 1  # Lower priority, so it matches last
+
+  services:
+    snake-frontend-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8040"
+
+    snake-backend-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8020"
+
