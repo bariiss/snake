@@ -6,6 +6,7 @@
   padding: 2rem;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1500px) {
@@ -13,6 +14,15 @@
     width: 95%;
     min-width: 95%;
     max-width: 95%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .lobby-container {
+    width: 98%;
+    min-width: 98%;
+    max-width: 98%;
+    padding: 1.5rem;
   }
 }
 
@@ -72,6 +82,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   border: 1px solid #2a2a4a;
   width: 100%;
+  min-width: 100%;
   box-sizing: border-box;
 }
 
@@ -301,16 +312,16 @@
 }
 
 .header-actions button {
-  padding: 8px 14px;
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  font-size: 0.8rem;
   font-weight: 500;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  min-width: 80px;
-  height: 34px;
+  min-width: 70px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -448,11 +459,11 @@
 }
 
 .btn-large {
-  padding: 12px 24px;
-  font-size: 1rem;
+  padding: 8px 16px;
+  font-size: 0.85rem;
   font-weight: 600;
-  border-radius: 10px;
-  min-width: 120px;
+  border-radius: 8px;
+  min-width: 90px;
   white-space: nowrap;
 }
 
@@ -476,28 +487,34 @@
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
   border: 2px solid #90caf9;
   border-radius: 10px;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  min-width: 0; /* Prevent overflow */
 }
 
 .pending-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
+  min-width: 0; /* Prevent overflow */
+  flex-wrap: wrap;
 }
 
 .pending-text {
   color: #1565c0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .pending-to {
   font-weight: 600;
   color: #0d47a1;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .btn-cancel {
@@ -539,6 +556,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 .request-status {
@@ -598,6 +616,8 @@
   border-radius: 8px;
   transition: all 0.3s ease;
   border: 1px solid #2a2a4a;
+  gap: 1rem;
+  min-width: 0; /* Prevent overflow */
 }
 
 .player-item:hover {
@@ -613,13 +633,18 @@
 .player-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+  flex-wrap: wrap;
 }
 
 .player-name {
   font-weight: 600;
   color: #e0e0e0;
   font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .you-badge {
