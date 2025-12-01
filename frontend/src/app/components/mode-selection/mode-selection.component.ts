@@ -26,7 +26,15 @@ export class ModeSelectionComponent implements OnInit, OnDestroy {
       this.gameService.getCurrentPlayer().subscribe(player => {
         this.isConnected = !!player;
         if (!player) {
-          // Not connected, redirect to login
+          // Not connected - clear any invalid tokens before redirecting
+          // This prevents login component from trying to auto-connect with invalid token
+          const token = localStorage.getItem('snake_game_token');
+          if (token) {
+            // Token exists but player is not connected - token is invalid
+            localStorage.removeItem('snake_game_token');
+            localStorage.removeItem('snake_game_access_token');
+          }
+          // Redirect to login
           this.router.navigate(['/login']);
         }
       })

@@ -399,21 +399,27 @@ export class GameService {
             this.connectionError$.next('Username already in use. Please choose another name.');
             this.wsService.disconnect();
           } else if (message.code === 'INVALID_TOKEN' || message.code === 'PLAYER_NOT_FOUND') {
-            // Token is invalid or player not found - try to reconnect with access token if available
+            // Token is invalid or player not found - clear tokens immediately to prevent retry loops
+            const currentToken = localStorage.getItem('snake_game_token');
             const accessToken = localStorage.getItem('snake_game_access_token');
-            if (accessToken) {
-              // Try to reconnect with access token
+            
+            // Clear current token
+            localStorage.removeItem('snake_game_token');
+            this.currentPlayer$.next(null);
+            
+            // Disconnect WebSocket to stop retry attempts
+            this.wsService.disconnect();
+            
+            // Try access token only if it's different from current token and exists
+            if (accessToken && accessToken !== currentToken) {
               console.log('Token expired, attempting to reconnect with access token...');
-              this.wsService.disconnect();
               setTimeout(() => {
                 this.connectWithToken(accessToken);
               }, 500);
             } else {
-              // No access token, clear token and redirect to login
-              localStorage.removeItem('snake_game_token');
-              this.currentPlayer$.next(null);
+              // No access token or same as current token, clear both and redirect to login
+              localStorage.removeItem('snake_game_access_token');
               this.connectionError$.next(message.message || 'Session expired. Please login again.');
-              this.wsService.disconnect();
               setTimeout(() => {
                 this.router.navigate(['/login']);
               }, 1000);

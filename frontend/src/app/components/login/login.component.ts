@@ -18,6 +18,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   isConnecting: boolean = false;
   private subscriptions = new Subscription();
   private readonly USERNAME_STORAGE_KEY = 'snake_game_username';
+  private connectionTimeout: any = null;
 
   constructor(
     private gameService: GameService,
@@ -39,9 +40,11 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.connectWithToken(token);
       
       // Set timeout - if connection doesn't succeed within 5 seconds, clear token and show login form
-      setTimeout(() => {
+      this.connectionTimeout = setTimeout(() => {
         if (this.isConnecting) {
           // Still connecting after timeout, clear token and allow manual login
+          // Disconnect any ongoing connection attempts
+          this.gameService.disconnect();
           localStorage.removeItem('snake_game_token');
           localStorage.removeItem('snake_game_access_token');
           this.isConnecting = false;
@@ -74,9 +77,10 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.isConnecting = false;
           // If error occurs with token, try access token first, then clear and allow manual login
           if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN') || error.includes('PLAYER_NOT_FOUND')) {
+            const currentToken = localStorage.getItem('snake_game_token');
             const accessToken = localStorage.getItem('snake_game_access_token');
-            if (accessToken && accessToken !== token) {
-              // Try to reconnect with access token
+            if (accessToken && accessToken !== currentToken) {
+              // Try to reconnect with access token (only once)
               this.isConnecting = true;
               this.connectWithToken(accessToken);
               return;
@@ -85,6 +89,7 @@ export class LoginComponent implements OnInit, OnDestroy {
             localStorage.removeItem('snake_game_token');
             localStorage.removeItem('snake_game_access_token');
             this.errorMessage = 'Session expired. Please login again.';
+            this.isConnecting = false; // Stop trying to connect
             if (savedUsername) {
               this.username = savedUsername;
             }
@@ -122,7 +127,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getCurrentPlayer().subscribe(player => {
         if (player && this.isConnecting) {
-          // Connected successfully, navigate to mode selection
+          // Connected successfully, clear timeout and navigate to mode selection
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
           this.isConnecting = false;
           setTimeout(() => {
             this.router.navigate(['/mode-selection']);
@@ -133,6 +142,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+    }
     this.subscriptions.unsubscribe();
   }
 
