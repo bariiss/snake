@@ -29,9 +29,13 @@ func (gm *Manager) RemovePlayer(playerID string) {
 			if game.Player1.ID == playerID {
 				disconnectedPlayer = game.Player1
 				otherPlayer = game.Player2
+				// Clear disconnected player's Send channel to mark as inactive
+				game.Player1.Send = nil
 			} else {
 				disconnectedPlayer = game.Player2
 				otherPlayer = game.Player1
+				// Clear disconnected player's Send channel to mark as inactive
+				game.Player2.Send = nil
 			}
 			game.Mutex.Unlock()
 			if isActive {
