@@ -68,12 +68,32 @@ export class GameComponent implements OnInit, OnDestroy {
                   this.showRematchButton = true;
                   // Update statistics
                   this.updateGameStats(state);
+                  
+                  // If opponent disconnected and game is finished, don't show rematch
+                  if (this.opponentDisconnected) {
+                    this.showRematchButton = false;
+                  }
                 }
                 // Handle rematch countdown
                 if (state.status === 'rematch_countdown' && (state as any).countdown) {
                   this.rematchCountdown = (state as any).countdown;
                 }
                 this.drawGame();
+              } else {
+                // If game state is null and we're on a game page, check if we should redirect
+                // This handles page refresh when game doesn't exist or is finished
+                if (this.gameId && !this.isSpectator) {
+                  // Wait a bit to see if state arrives, then redirect if still null
+                  setTimeout(() => {
+                    if (!this.gameState) {
+                      console.log('Game state is null, redirecting to lobby...');
+                      this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
+                      setTimeout(() => {
+                        this.router.navigate(['/']);
+                      }, 1500);
+                    }
+                  }, 2000);
+                }
               }
             })
           );
@@ -112,12 +132,12 @@ export class GameComponent implements OnInit, OnDestroy {
     this.gameStateTimeout = setTimeout(() => {
       if (!this.gameState && this.gameId) {
         console.log('No game state found after timeout, redirecting to lobby...');
-        this.gameService.showInfoBanner('Game not found or player disconnected. Returning to lobby...', 'warning');
+        this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
         setTimeout(() => {
           this.router.navigate(['/']);
         }, 1500);
       }
-    }, 3000); // Wait 3 seconds for game state
+    }, 2000); // Wait 2 seconds for game state
   }
 
   ngOnDestroy(): void {

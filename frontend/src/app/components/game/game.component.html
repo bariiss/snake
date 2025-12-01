@@ -1,6 +1,5 @@
 <div class="game-container">
   <div class="game-header">
-    <button class="btn-danger" (click)="backToLobby()">Back to Lobby</button>
     <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
   </div>
 
@@ -122,7 +121,7 @@
             <p *ngIf="gameState && gameState.winner === 'tie'" class="tie-text">It's a tie! 🎉</p>
           </div>
           
-          <div *ngIf="!isSpectator && getOtherPlayer()" class="rematch-section">
+          <div *ngIf="!isSpectator && getOtherPlayer() && !opponentDisconnected" class="rematch-section">
             <p *ngIf="rematchRequestedByOpponent" class="rematch-alert">
               {{ rematchRequestMessage }}
             </p>
