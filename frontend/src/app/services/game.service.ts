@@ -296,7 +296,7 @@ export class GameService {
         case 'player_disconnected':
           // Player disconnected - update game state to show opponent disconnected
           if (message.message && message.player) {
-            this.showInfoBanner(`${message.player} has left the game. You can return to lobby.`, 'warning');
+            this.showInfoBanner(`${message.player} has left the game. Returning to lobby...`, 'warning');
             // Update game state to mark opponent as disconnected
             const currentState = this.currentGameState$.value;
             if (currentState) {
@@ -308,6 +308,11 @@ export class GameService {
                 players: updatedPlayers
               });
             }
+            // Automatically redirect to lobby after showing message
+            setTimeout(() => {
+              this.currentGameState$.next(null); // Clear game state
+              this.router.navigate(['/']);
+            }, 2000);
           }
           break;
         case 'rematch_request':
