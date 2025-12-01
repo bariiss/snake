@@ -37,7 +37,7 @@
   z-index: -1;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 50%, #0a0e27 100%);
   background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  animation: gradientShift 20s ease infinite;
 }
 
 @keyframes gradientShift {
@@ -45,7 +45,7 @@
   50% { background-position: 100% 50%; }
 }
 
-/* Animated snakes in background */
+/* Animated circles in background */
 .lobby-container::after {
   content: '';
   position: fixed;
@@ -54,88 +54,73 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  opacity: 0.15;
+  opacity: 0.08;
   background-image: 
-    /* Snake 1 - Red (longer, wavy) */
-    linear-gradient(45deg, 
-      transparent 0%, transparent 35%, 
-      #ff4444 35%, #ff4444 38%, 
-      transparent 38%, transparent 42%, 
-      #ff6666 42%, #ff6666 45%, 
-      transparent 45%, transparent 48%, 
-      #ff4444 48%, #ff4444 51%, 
-      transparent 51%, transparent 54%, 
-      #ff6666 54%, #ff6666 57%, 
-      transparent 57%, transparent 60%, 
-      #ff4444 60%, #ff4444 63%, 
-      transparent 63%, transparent 66%, 
-      #ff6666 66%, #ff6666 69%, 
-      transparent 69%, transparent 72%, 
-      #ff4444 72%, #ff4444 75%, 
-      transparent 75%),
-    /* Snake 2 - Blue (curved path) */
-    linear-gradient(-35deg, 
-      transparent 0%, transparent 38%, 
-      #4488ff 38%, #4488ff 41%, 
-      transparent 41%, transparent 44%, 
-      #6699ff 44%, #6699ff 47%, 
-      transparent 47%, transparent 50%, 
-      #4488ff 50%, #4488ff 53%, 
-      transparent 53%, transparent 56%, 
-      #6699ff 56%, #6699ff 59%, 
-      transparent 59%, transparent 62%, 
-      #4488ff 62%, #4488ff 65%, 
-      transparent 65%, transparent 68%, 
-      #6699ff 68%, #6699ff 71%, 
-      transparent 71%),
-    /* Snake 3 - Green (sinuous) */
-    linear-gradient(55deg, 
-      transparent 0%, transparent 32%, 
-      #44ff88 32%, #44ff88 35%, 
-      transparent 35%, transparent 39%, 
-      #66ffaa 39%, #66ffaa 42%, 
-      transparent 42%, transparent 46%, 
-      #44ff88 46%, #44ff88 49%, 
-      transparent 49%, transparent 53%, 
-      #66ffaa 53%, #66ffaa 56%, 
-      transparent 56%, transparent 60%, 
-      #44ff88 60%, #44ff88 63%, 
-      transparent 63%, transparent 67%, 
-      #66ffaa 67%, #66ffaa 70%, 
-      transparent 70%),
-    /* Snake 4 - Yellow (wavy) */
-    linear-gradient(-50deg, 
-      transparent 0%, transparent 40%, 
-      #ffaa44 40%, #ffaa44 43%, 
-      transparent 43%, transparent 47%, 
-      #ffcc66 47%, #ffcc66 50%, 
-      transparent 50%, transparent 54%, 
-      #ffaa44 54%, #ffaa44 57%, 
-      transparent 57%, transparent 61%, 
-      #ffcc66 61%, #ffcc66 64%, 
-      transparent 64%, transparent 68%, 
-      #ffaa44 68%, #ffaa44 71%, 
-      transparent 71%);
-  background-size: 300px 300px, 280px 280px, 320px 320px, 260px 260px;
-  background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
-  animation: snakeSlither 25s ease-in-out infinite;
+    radial-gradient(circle at 20% 30%, rgba(76, 175, 80, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(33, 150, 243, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(156, 39, 176, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 10% 80%, rgba(255, 152, 0, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(244, 67, 54, 0.2) 0%, transparent 50%);
+  background-size: 
+    400px 400px,
+    500px 500px,
+    600px 600px,
+    350px 350px,
+    450px 450px;
+  background-position: 
+    0% 0%,
+    100% 100%,
+    50% 50%,
+    0% 100%,
+    100% 0%;
+  animation: floatingCircles 30s ease-in-out infinite;
 }
 
-@keyframes snakeSlither {
+@keyframes floatingCircles {
   0% {
-    background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
+    background-position: 
+      0% 0%,
+      100% 100%,
+      50% 50%,
+      0% 100%,
+      100% 0%;
+    opacity: 0.08;
   }
   25% {
-    background-position: 25% 25%, 50% 50%, 75% 75%, 0% 0%;
+    background-position: 
+      20% 20%,
+      80% 80%,
+      60% 40%,
+      10% 90%,
+      90% 10%;
+    opacity: 0.1;
   }
   50% {
-    background-position: 50% 50%, 75% 75%, 0% 0%, 25% 25%;
+    background-position: 
+      40% 10%,
+      60% 90%,
+      30% 70%,
+      20% 80%,
+      80% 20%;
+    opacity: 0.08;
   }
   75% {
-    background-position: 75% 75%, 0% 0%, 25% 25%, 50% 50%;
+    background-position: 
+      10% 30%,
+      90% 70%,
+      70% 30%,
+      5% 95%,
+      95% 5%;
+    opacity: 0.1;
   }
   100% {
-    background-position: 0% 0%, 25% 25%, 50% 50%, 75% 75%;
+    background-position: 
+      0% 0%,
+      100% 100%,
+      50% 50%,
+      0% 100%,
+      100% 0%;
+    opacity: 0.08;
   }
 }
 
