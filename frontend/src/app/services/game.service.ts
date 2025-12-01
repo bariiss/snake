@@ -180,9 +180,7 @@ export class GameService {
             // Frontend will show mode selection (single/multiplayer)
             // joinLobby() will be called when multiplayer is selected
             // Set to ready immediately so loading screen closes and mode selection shows
-            setTimeout(() => {
-              this.connectionStatus$.next({ step: 'ready', completed: true });
-            }, 300);
+            this.connectionStatus$.next({ step: 'ready', completed: true });
           }
           break;
         case 'lobby_status':
