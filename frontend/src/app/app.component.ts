@@ -240,10 +240,14 @@ export class AppComponent implements OnInit, OnDestroy {
       this.gameService.getConnectionStatus().subscribe(status => {
         this.currentStep = status.step;
         
-        // Show loading screen when connection starts
+        // Show loading screen ONLY when connection starts (user clicked Connect)
+        // Don't show on initial page load
         if (status.step === 'connecting' && !status.completed) {
-          this.isLoading = true;
-          this.completedSteps = []; // Reset completed steps
+          // Only show if we've completed initial load (user has interacted)
+          if (this.initialLoadComplete) {
+            this.isLoading = true;
+            this.completedSteps = []; // Reset completed steps
+          }
         }
         
         // Hide loading if we go back to idle (disconnected)
@@ -270,10 +274,10 @@ export class AppComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Initial loading screen - show for 1.5 seconds on first load
+    // Initial loading screen - show for 1.5 seconds on first load, then mark as complete
     setTimeout(() => {
       this.initialLoadComplete = true;
-      // Only hide if we're idle or not connecting (i.e., no connection attempt yet)
+      // Hide initial loading screen
       if (this.currentStep === 'idle' || (this.currentStep === 'connecting' && this.completedSteps.length === 0)) {
         this.isLoading = false;
       }

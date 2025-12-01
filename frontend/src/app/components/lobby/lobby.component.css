@@ -131,6 +131,12 @@
   display: block;
 }
 
+.card.lobby-card:has(.connect-section) {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 3rem 2.5rem;
+}
+
 .card.lobby-card h1 {
   font-size: 1.8rem;
   margin: 0 0 1.5rem 0;
@@ -160,28 +166,111 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem 0;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.error-message {
+  background: rgba(244, 67, 54, 0.15);
+  border: 2px solid #f44336;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  width: 100%;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-message p {
+  margin: 0;
+  color: #ffcdd2;
+  font-size: 0.95rem;
+}
+
+.error-message .error-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #ef9a9a;
+  font-style: italic;
+}
+
+.connect-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  animation: none;
+}
+
+.connect-subtitle {
+  color: #90caf9;
+  font-size: 0.95rem;
+  text-align: center;
+  margin: 0;
+  opacity: 0.8;
 }
 
 .input-group {
   width: 100%;
-  max-width: 400px;
 }
 
 .input-group input {
   width: 100%;
+  padding: 14px 18px;
+  font-size: 1rem;
+  background: #1a1a2e;
+  border: 2px solid #2a2a4a;
+  border-radius: 12px;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  outline: none;
 }
 
 .button-container {
   display: flex;
   justify-content: center;
   width: 100%;
-  max-width: 400px;
 }
 
 .button-container button {
   width: 100%;
+  padding: 14px 24px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+}
+
+.button-container button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
+}
+
+.button-container button:active {
+  transform: translateY(0);
 }
 
 /* Modal Styles */
