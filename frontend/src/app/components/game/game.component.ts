@@ -21,6 +21,7 @@ export class GameComponent implements OnInit, OnDestroy {
   showRematchButton: boolean = false;
   currentPlayerId: string = '';
   banner: { type: 'info' | 'warning'; message: string } | null = null;
+  opponentDisconnected: boolean = false; // Track if opponent disconnected
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private cellSize = 20;
@@ -43,35 +44,39 @@ export class GameComponent implements OnInit, OnDestroy {
     this.ctx = this.canvas.getContext('2d')!;
     this.setupCanvas();
 
-    // Subscribe to game state updates
-    this.subscriptions.add(
-      this.gameService.getCurrentGameState().subscribe(state => {
-        if (state) {
-          this.gameState = state;
-          // Clear timeout if game state is received
-          if (this.gameStateTimeout) {
-            clearTimeout(this.gameStateTimeout);
-            this.gameStateTimeout = null;
-          }
-          // Update ready status based on current player
-          if (state.players && this.currentPlayerId) {
-            const currentPlayer = state.players.find((p: PlayerStatus) => p.id === this.currentPlayerId);
-            this.isReady = currentPlayer?.ready || false;
-          }
-          // Check if game is finished to show rematch button
-          if (state.status === 'finished' && !this.isSpectator) {
-            this.showRematchButton = true;
-            // Update statistics
-            this.updateGameStats(state);
-          }
-          // Handle rematch countdown
-          if (state.status === 'rematch_countdown' && (state as any).countdown) {
-            this.rematchCountdown = (state as any).countdown;
-          }
-          this.drawGame();
-        }
-      })
-    );
+          // Subscribe to game state updates
+          this.subscriptions.add(
+            this.gameService.getCurrentGameState().subscribe(state => {
+              if (state) {
+                this.gameState = state;
+                // Clear timeout if game state is received
+                if (this.gameStateTimeout) {
+                  clearTimeout(this.gameStateTimeout);
+                  this.gameStateTimeout = null;
+                }
+                // Update ready status based on current player
+                if (state.players && this.currentPlayerId) {
+                  const currentPlayer = state.players.find((p: PlayerStatus) => p.id === this.currentPlayerId);
+                  this.isReady = currentPlayer?.ready || false;
+                  
+                  // Check if opponent disconnected (other player not in players list or game status is finished)
+                  const otherPlayer = state.players.find((p: PlayerStatus) => p.id !== this.currentPlayerId);
+                  this.opponentDisconnected = !otherPlayer && state.status === 'finished';
+                }
+                // Check if game is finished to show rematch button
+                if (state.status === 'finished' && !this.isSpectator) {
+                  this.showRematchButton = true;
+                  // Update statistics
+                  this.updateGameStats(state);
+                }
+                // Handle rematch countdown
+                if (state.status === 'rematch_countdown' && (state as any).countdown) {
+                  this.rematchCountdown = (state as any).countdown;
+                }
+                this.drawGame();
+              }
+            })
+          );
 
     // Check if spectator mode
     this.subscriptions.add(

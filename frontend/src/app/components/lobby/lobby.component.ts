@@ -54,7 +54,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
         this.players = (players || [])
           .map(player => ({
             ...player,
-            joinedAt: player.joinedAt || (player as any).joined_at
+            joinedAt: player.joinedAt || (player as any).joined_at,
+            in_game: (player as any).in_game || false
           }))
           .sort((a, b) => {
             const aTime = new Date(a.joinedAt || 0).getTime();

@@ -109,8 +109,9 @@
             <div class="player-info">
               <span class="player-name">{{ player.username }}</span>
               <span *ngIf="isCurrentPlayer(player.id)" class="you-badge">You</span>
+              <span *ngIf="!isCurrentPlayer(player.id) && player.in_game" class="in-game-badge">In Game</span>
             </div>
-            <div *ngIf="!isCurrentPlayer(player.id)" class="player-actions">
+            <div *ngIf="!isCurrentPlayer(player.id) && !player.in_game" class="player-actions">
               <button
                 *ngIf="!hasPendingRequestTo(player.id)"
                 class="btn-secondary btn-small"

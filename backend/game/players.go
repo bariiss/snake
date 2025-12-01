@@ -50,6 +50,8 @@ func (gm *Manager) RemovePlayer(playerID string) {
 							gm.AddToLobby(otherPlayer)
 						}
 					}
+					// Broadcast updated lobby status (disconnected player will show as "in game" until they reconnect)
+					gm.BroadcastLobbyStatus()
 				} else {
 					gm.sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
 						"from_player": disconnectedPlayer,

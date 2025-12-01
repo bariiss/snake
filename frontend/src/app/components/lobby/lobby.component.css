@@ -501,6 +501,15 @@
   font-weight: 600;
 }
 
+.in-game-badge {
+  background: #ff9800;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .btn-small {
   padding: 8px 14px;
   font-size: 0.8rem;

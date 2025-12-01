@@ -78,7 +78,7 @@
               </div>
             </div>
             
-            <div *ngIf="!isSpectator" class="ready-action">
+            <div *ngIf="!isSpectator && !opponentDisconnected" class="ready-action">
               <p class="ready-prompt" *ngIf="!isReady">
                 Click the button below when you're ready to start:
               </p>
@@ -95,6 +95,11 @@
                 <span *ngIf="!isReady">🎮 Click to Ready</span>
                 <span *ngIf="isReady">✓ Ready!</span>
               </button>
+            </div>
+            
+            <div *ngIf="!isSpectator && opponentDisconnected" class="opponent-disconnected">
+              <p class="disconnected-message">⚠️ Your opponent has left the game.</p>
+              <button class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
             </div>
             
             <div *ngIf="isSpectator" class="spectator-waiting">

@@ -9,6 +9,7 @@ export interface Player {
   username: string;
   ready: boolean;
   joinedAt?: string;
+  in_game?: boolean; // True if player is currently in an active game
 }
 
 export interface PlayerStatus {
@@ -287,12 +288,20 @@ export class GameService {
           });
           break;
         case 'player_disconnected':
-          // Player disconnected - show message and return to lobby
+          // Player disconnected - update game state to show opponent disconnected
           if (message.message && message.player) {
-            this.showInfoBanner(`${message.player} has left the game. Returning to lobby...`, 'warning');
-            // Clear game state
-            this.currentGameState$.next(null);
-            setTimeout(() => this.router.navigate(['/']), 2000);
+            this.showInfoBanner(`${message.player} has left the game. You can return to lobby.`, 'warning');
+            // Update game state to mark opponent as disconnected
+            const currentState = this.currentGameState$.value;
+            if (currentState) {
+              // Remove disconnected player from players list and mark game as finished
+              const updatedPlayers = currentState.players?.filter((p: PlayerStatus) => p.username !== message.player) || [];
+              this.currentGameState$.next({
+                ...currentState,
+                status: 'finished' as any, // Mark as finished so ready button doesn't show
+                players: updatedPlayers
+              });
+            }
           }
           break;
         case 'rematch_request':

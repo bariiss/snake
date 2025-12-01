@@ -67,9 +67,37 @@ func (gm *Manager) BroadcastLobbyStatus() {
 
 	log.Printf("Broadcasting lobby status to %d players", len(players))
 
+	// Check which players are in active games
+	gm.Mutex.RLock()
+	playersInGame := make(map[string]bool)
+	for _, game := range gm.Games {
+		game.Mutex.RLock()
+		if game.State.Status != "finished" {
+			playersInGame[game.Player1.ID] = true
+			playersInGame[game.Player2.ID] = true
+		}
+		game.Mutex.RUnlock()
+	}
+	gm.Mutex.RUnlock()
+
+	// Add in_game status to players
+	playersWithStatus := make([]map[string]any, 0, len(players))
+	for _, p := range players {
+		playerData := map[string]any{
+			"id":        p.ID,
+			"username":  p.Username,
+			"ready":     p.Ready,
+			"joined_at": p.JoinedAt,
+		}
+		if playersInGame[p.ID] {
+			playerData["in_game"] = true
+		}
+		playersWithStatus = append(playersWithStatus, playerData)
+	}
+
 	for _, p := range players {
 		gm.sendMessage(p, constants.MSG_LOBBY_STATUS, map[string]any{
-			"players": players,
+			"players": playersWithStatus,
 		})
 		log.Printf("Sent lobby status to player %s (%s)", p.ID, p.Username)
 	}

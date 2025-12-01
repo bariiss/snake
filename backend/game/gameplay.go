@@ -297,6 +297,9 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 
 	// Broadcast updated games list (finished games will be filtered out)
 	gm.BroadcastGamesList()
+
+	// Broadcast updated lobby status (players will show as "in game" until they leave)
+	gm.BroadcastLobbyStatus()
 }
 
 func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
