@@ -294,6 +294,9 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 			gm.AddToLobby(player2)
 		}
 	}
+
+	// Broadcast updated games list (finished games will be filtered out)
+	gm.BroadcastGamesList()
 }
 
 func (gm *Manager) generateFood(snakes []models.Snake) models.Position {

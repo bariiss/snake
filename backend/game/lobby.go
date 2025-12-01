@@ -154,6 +154,12 @@ func (gm *Manager) SendGamesList(player *models.Player) {
 	gamesList := make([]map[string]any, 0, len(gm.Games))
 	for gameID, game := range gm.Games {
 		game.Mutex.RLock()
+		// Skip finished games - they shouldn't appear in the lobby
+		if game.State.Status == "finished" {
+			game.Mutex.RUnlock()
+			continue
+		}
+
 		gameInfo := map[string]any{
 			"id":         gameID,
 			"player1":    game.Player1.Username,

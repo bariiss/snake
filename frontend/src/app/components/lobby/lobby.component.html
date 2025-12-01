@@ -159,9 +159,9 @@
               </div>
             </div>
             <button
+              *ngIf="game.status !== 'finished'"
               class="btn-secondary"
               (click)="watchGame(game.id)"
-              [disabled]="game.status === 'finished'"
             >
               Watch
             </button>
