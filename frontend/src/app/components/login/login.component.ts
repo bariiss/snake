@@ -61,6 +61,23 @@ export class LoginComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Listen for successful connection (also clears timeout)
+    this.subscriptions.add(
+      this.gameService.getCurrentPlayer().subscribe(player => {
+        if (player && this.isConnecting) {
+          // Connected successfully, clear timeout and navigate to mode selection
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
+          this.isConnecting = false;
+          setTimeout(() => {
+            this.router.navigate(['/mode-selection']);
+          }, 100);
+        }
+      })
+    );
+
     // Listen for connection errors
     this.subscriptions.add(
       this.gameService.getConnectionError().subscribe(error => {
