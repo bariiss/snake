@@ -1,6 +1,16 @@
 <div class="game-container">
   <div class="game-header">
-    <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
+    <div class="header-left">
+      <span *ngIf="isSpectator" class="spectator-badge">👁️ Spectator Mode</span>
+    </div>
+    <div class="header-right">
+      <button *ngIf="isSinglePlayer()" class="btn-mode-selection" (click)="backToModeSelection()">
+        🎮 Mode Selection
+      </button>
+      <button class="btn-disconnect" (click)="disconnect()">
+        Disconnect
+      </button>
+    </div>
   </div>
 
   <div *ngIf="banner" class="banner" [class.banner-warning]="banner.type === 'warning'">
@@ -98,7 +108,12 @@
             
             <div *ngIf="!isSpectator && opponentDisconnected" class="opponent-disconnected">
               <p class="disconnected-message">⚠️ Your opponent has left the game.</p>
-              <button class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
+              <div class="disconnected-actions">
+                <button *ngIf="isSinglePlayer()" class="btn-primary btn-mode-selection" (click)="backToModeSelection()">
+                  🎮 Mode Selection
+                </button>
+                <button *ngIf="!isSinglePlayer()" class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
+              </div>
             </div>
             
             <div *ngIf="isSpectator" class="spectator-waiting">
@@ -154,7 +169,12 @@
             </p>
           </div>
           
-          <button class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
+          <div class="game-over-actions">
+            <button *ngIf="isSinglePlayer()" class="btn-primary btn-mode-selection" (click)="backToModeSelection()">
+              🎮 Mode Selection
+            </button>
+            <button *ngIf="!isSinglePlayer()" class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
+          </div>
         </div>
       </div>
     </div>

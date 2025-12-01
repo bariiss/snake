@@ -28,6 +28,7 @@ export interface GameState {
   players?: PlayerStatus[];
   rematchRequesterId?: string;
   rematchRequesterName?: string;
+  is_single_player?: boolean;
 }
 
 export interface Snake {

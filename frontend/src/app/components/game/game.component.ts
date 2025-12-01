@@ -415,6 +415,21 @@ export class GameComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
+  backToModeSelection(): void {
+    // Navigate to mode selection
+    this.router.navigate(['/mode-selection']);
+  }
+
+  disconnect(): void {
+    // Disconnect and go to login
+    this.gameService.disconnect();
+    this.router.navigate(['/login']);
+  }
+
+  isSinglePlayer(): boolean {
+    return this.gameState?.is_single_player || false;
+  }
+
   shouldShowStatusBanner(): boolean {
     if (!this.gameState) return false;
     return ['waiting', 'countdown', 'rematch_countdown'].includes(this.gameState.status);
