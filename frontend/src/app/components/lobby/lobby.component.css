@@ -1,7 +1,7 @@
 .lobby-container {
   max-width: 1400px;
-  width: 1400px !important;
-  min-width: 1400px !important;
+  width: 100%;
+  min-width: 320px;
   margin: 0 auto;
   padding: 2rem;
   position: relative;
@@ -10,12 +10,15 @@
   display: block;
 }
 
+@media (max-width: 1400px) {
+  .lobby-container {
+    padding: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .lobby-container {
-    width: 98% !important;
-    min-width: 98% !important;
-    max-width: 98% !important;
-    padding: 1.5rem;
+    padding: 1rem;
   }
 }
 
@@ -309,12 +312,6 @@
 }
 
 @media (max-width: 1200px) {
-  .lobby-container {
-    max-width: 100%;
-    width: 98%;
-    padding: 1.5rem;
-  }
-  
   .lobby-main-content {
     gap: 1.5rem;
   }
