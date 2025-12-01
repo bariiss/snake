@@ -45,9 +45,31 @@ export class LobbyComponent implements OnInit, OnDestroy {
     const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
     if (savedUsername) {
       this.username = savedUsername;
-      // Auto-connect if username exists
-      this.connect();
     }
+    
+    // Check if already connected first
+    this.subscriptions.add(
+      this.gameService.getCurrentPlayer().subscribe(player => {
+        this.currentPlayer = player;
+        // Update username from player if available and not set
+        if (player && player.username && !this.username) {
+          this.username = player.username;
+          localStorage.setItem(this.USERNAME_STORAGE_KEY, player.username);
+        }
+        // If we have a player, we're connected
+        if (player) {
+          this.isConnected = true;
+        } else if (savedUsername && !this.isConnected) {
+          // Not connected but have username - auto-connect
+          // Use setTimeout to avoid race condition
+          setTimeout(() => {
+            if (!this.isConnected && this.username) {
+              this.connect();
+            }
+          }, 100);
+        }
+      })
+    );
     
     this.subscriptions.add(
       this.gameService.getLobbyPlayers().subscribe(players => {
@@ -75,17 +97,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getPendingRequest().subscribe(requests => {
         this.pendingRequests = requests || [];
-      })
-    );
-
-    this.subscriptions.add(
-      this.gameService.getCurrentPlayer().subscribe(player => {
-        this.currentPlayer = player;
-        // Update username from player if available and not set
-        if (player && player.username && !this.username) {
-          this.username = player.username;
-          localStorage.setItem(this.USERNAME_STORAGE_KEY, player.username);
-        }
       })
     );
 

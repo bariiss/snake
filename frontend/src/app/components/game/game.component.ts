@@ -354,6 +354,8 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   backToLobby(): void {
+    // Don't disconnect - just navigate to lobby
+    // The lobby component will check if we're already connected
     this.router.navigate(['/']);
   }
 

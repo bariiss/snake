@@ -63,11 +63,15 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	existingPlayer := h.gameManager.FindPlayerByUsername(username)
 	if existingPlayer != nil && existingPlayer.Send != nil {
 		// Same username is already connected - close old connection
-		log.Printf("Username %s already connected, closing old connection", username)
+		log.Printf("Username %s already connected, closing old connection (old ID: %s)", username, existingPlayer.ID)
+		// Close the old WebSocket connection by closing the Send channel
+		// This will trigger the readPump defer which calls RemovePlayer
 		close(existingPlayer.Send)
 		existingPlayer.Send = nil
-		// Remove from lobby and games
+		// Remove from lobby and games immediately
 		h.gameManager.RemovePlayer(existingPlayer.ID)
+		// Wait a bit for cleanup
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	// Check again if username exists (after cleanup)
