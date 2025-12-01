@@ -16,21 +16,44 @@ import { Subscription } from 'rxjs';
           <div class="snake-emoji">🐍</div>
           <h1 class="game-title">Slither Arena</h1>
           <div class="connection-steps">
-            <div class="step" [class.active]="currentStep === 'connecting'" [class.completed]="isStepCompleted('connecting')">
-              <span class="step-icon">{{ isStepCompleted('connecting') ? '✓' : '⟳' }}</span>
-              <span class="step-text">WebSocket bağlantısı kuruluyor...</span>
+            <!-- Connection Steps -->
+            <div *ngIf="!isDisconnecting()" class="steps-container">
+              <div class="step" [class.active]="currentStep === 'connecting'" [class.completed]="isStepCompleted('connecting')">
+                <span class="step-icon">{{ isStepCompleted('connecting') ? '✓' : '⟳' }}</span>
+                <span class="step-text">Establishing WebSocket connection...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'connected'" [class.completed]="isStepCompleted('connected')">
+                <span class="step-icon">{{ isStepCompleted('connected') ? '✓' : (currentStep === 'connected' ? '⟳' : '○') }}</span>
+                <span class="step-text">Connection established, retrieving user information...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'loading_lobby'" [class.completed]="isStepCompleted('lobby_loaded')">
+                <span class="step-icon">{{ isStepCompleted('lobby_loaded') ? '✓' : (currentStep === 'loading_lobby' ? '⟳' : '○') }}</span>
+                <span class="step-text">Loading lobby status...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'ready'" [class.completed]="isStepCompleted('ready')">
+                <span class="step-icon">{{ isStepCompleted('ready') ? '✓' : (currentStep === 'ready' ? '⟳' : '○') }}</span>
+                <span class="step-text">Retrieving game list...</span>
+              </div>
             </div>
-            <div class="step" [class.active]="currentStep === 'connected'" [class.completed]="isStepCompleted('connected')">
-              <span class="step-icon">{{ isStepCompleted('connected') ? '✓' : (currentStep === 'connected' ? '⟳' : '○') }}</span>
-              <span class="step-text">Bağlantı kuruldu, kullanıcı bilgileri alınıyor...</span>
-            </div>
-            <div class="step" [class.active]="currentStep === 'loading_lobby'" [class.completed]="isStepCompleted('lobby_loaded')">
-              <span class="step-icon">{{ isStepCompleted('lobby_loaded') ? '✓' : (currentStep === 'loading_lobby' ? '⟳' : '○') }}</span>
-              <span class="step-text">Lobby durumu yükleniyor...</span>
-            </div>
-            <div class="step" [class.active]="currentStep === 'ready'" [class.completed]="isStepCompleted('ready')">
-              <span class="step-icon">{{ isStepCompleted('ready') ? '✓' : (currentStep === 'ready' ? '⟳' : '○') }}</span>
-              <span class="step-text">Oyun listesi alınıyor...</span>
+            
+            <!-- Disconnection Steps -->
+            <div *ngIf="isDisconnecting()" class="steps-container">
+              <div class="step" [class.active]="currentStep === 'disconnecting_peer'" [class.completed]="isStepCompleted('disconnecting_peer')">
+                <span class="step-icon">{{ isStepCompleted('disconnecting_peer') ? '✓' : '⟳' }}</span>
+                <span class="step-text">Disconnecting peer-to-peer connection...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'disconnecting_websocket'" [class.completed]="isStepCompleted('disconnecting_websocket')">
+                <span class="step-icon">{{ isStepCompleted('disconnecting_websocket') ? '✓' : (currentStep === 'disconnecting_websocket' ? '⟳' : '○') }}</span>
+                <span class="step-text">Disconnecting WebSocket connection...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'disconnecting_lobby'" [class.completed]="isStepCompleted('disconnecting_lobby')">
+                <span class="step-icon">{{ isStepCompleted('disconnecting_lobby') ? '✓' : (currentStep === 'disconnecting_lobby' ? '⟳' : '○') }}</span>
+                <span class="step-text">Leaving lobby...</span>
+              </div>
+              <div class="step" [class.active]="currentStep === 'disconnected'" [class.completed]="isStepCompleted('disconnected')">
+                <span class="step-icon">{{ isStepCompleted('disconnected') ? '✓' : (currentStep === 'disconnected' ? '⟳' : '○') }}</span>
+                <span class="step-text">Connection closed</span>
+              </div>
             </div>
           </div>
         </div>
@@ -121,6 +144,14 @@ import { Subscription } from 'rxjs';
       gap: 15px;
       align-items: center;
       min-width: 300px;
+    }
+
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      align-items: center;
     }
 
     .step {
@@ -226,8 +257,8 @@ import { Subscription } from 'rxjs';
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Snake Game';
-  isLoading = true;
-  currentStep = 'connecting';
+  isLoading = false; // Don't show loading on initial page load
+  currentStep = 'idle';
   completedSteps: string[] = [];
   private subscriptions = new Subscription();
   private initialLoadComplete = false;
@@ -235,17 +266,19 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(private gameService: GameService) {}
 
   ngOnInit() {
+    // Mark initial load as complete immediately (no initial loading screen)
+    this.initialLoadComplete = true;
+    
     // Listen to connection status
     this.subscriptions.add(
       this.gameService.getConnectionStatus().subscribe(status => {
         this.currentStep = status.step;
         
         // Show loading screen ONLY when connection starts (user clicked Connect)
-        // Don't show on initial page load
-        if (status.step === 'connecting' && !status.completed) {
-          // Only show if we've completed initial load (user has interacted)
-          if (this.initialLoadComplete) {
-            this.isLoading = true;
+        // or when disconnecting (user clicked Disconnect)
+        if ((status.step === 'connecting' || status.step.startsWith('disconnecting')) && !status.completed) {
+          this.isLoading = true;
+          if (status.step === 'connecting' || status.step.startsWith('disconnecting')) {
             this.completedSteps = []; // Reset completed steps
           }
         }
@@ -270,18 +303,15 @@ export class AppComponent implements OnInit, OnDestroy {
               this.isLoading = false;
             }, 500);
           }
+          // If disconnected, hide loading after a short delay
+          if (status.step === 'disconnected') {
+            setTimeout(() => {
+              this.isLoading = false;
+            }, 800);
+          }
         }
       })
     );
-
-    // Initial loading screen - show for 1.5 seconds on first load, then mark as complete
-    setTimeout(() => {
-      this.initialLoadComplete = true;
-      // Hide initial loading screen
-      if (this.currentStep === 'idle' || (this.currentStep === 'connecting' && this.completedSteps.length === 0)) {
-        this.isLoading = false;
-      }
-    }, 1500);
   }
 
   ngOnDestroy() {
@@ -290,6 +320,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isStepCompleted(step: string): boolean {
     return this.completedSteps.includes(step);
+  }
+
+  isDisconnecting(): boolean {
+    return this.currentStep.startsWith('disconnecting') || this.currentStep === 'disconnected';
   }
 }
 

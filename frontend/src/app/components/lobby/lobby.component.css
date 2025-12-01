@@ -10,6 +10,15 @@
   display: block;
 }
 
+.lobby-container:has(.connect-section) {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
 @media (max-width: 1400px) {
   .lobby-container {
     padding: 1.5rem;
@@ -19,6 +28,19 @@
 @media (max-width: 768px) {
   .lobby-container {
     padding: 1rem;
+  }
+  
+  .lobby-container:has(.connect-section) {
+    padding: 1rem;
+  }
+  
+  .card.lobby-card:has(.connect-section) {
+    max-width: 100%;
+    padding: 2rem 1.5rem;
+  }
+  
+  .connect-section h1 {
+    font-size: 1.8rem;
   }
 }
 
@@ -132,9 +154,23 @@
 }
 
 .card.lobby-card:has(.connect-section) {
-  max-width: 450px;
+  max-width: 380px;
+  width: 100%;
   margin: 0 auto;
-  padding: 3rem 2.5rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: slideInScale 0.4s ease-out;
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .card.lobby-card h1 {
@@ -166,8 +202,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  padding: 1rem 0;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+  width: 100%;
 }
 
 .error-message {
@@ -205,14 +242,16 @@
 }
 
 .connect-section h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
   background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   text-shadow: none;
   animation: none;
+  text-align: center;
+  width: 100%;
 }
 
 .connect-subtitle {

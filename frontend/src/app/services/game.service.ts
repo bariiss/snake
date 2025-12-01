@@ -522,11 +522,38 @@ export class GameService {
   }
 
   disconnect(): void {
-    this.wsService.disconnect();
+    // Show disconnecting steps
+    this.connectionStatus$.next({ step: 'disconnecting_peer', completed: false });
+    
+    // Disconnect peer-to-peer first
     this.webrtcService.disconnectPeer();
-    this.resetState();
-    // Reset connection status when disconnecting
-    this.connectionStatus$.next({ step: 'idle', completed: false });
+    
+    setTimeout(() => {
+      this.connectionStatus$.next({ step: 'disconnecting_peer', completed: true });
+      this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: false });
+      
+      // Disconnect WebSocket
+      this.wsService.disconnect();
+      
+      setTimeout(() => {
+        this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
+        this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
+        
+        // Leave lobby
+        this.leaveLobby();
+        
+        setTimeout(() => {
+          this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: true });
+          this.connectionStatus$.next({ step: 'disconnected', completed: true });
+          
+          // Reset state after showing disconnected
+          setTimeout(() => {
+            this.resetState();
+            this.connectionStatus$.next({ step: 'idle', completed: false });
+          }, 500);
+        }, 300);
+      }, 300);
+    }, 300);
   }
 
   resetState(): void {
