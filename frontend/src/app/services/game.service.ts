@@ -180,9 +180,11 @@ export class GameService {
             // Store token if provided
             if (message.token) {
               localStorage.setItem('snake_game_token', message.token);
+              // Also store as access token for refresh purposes
+              localStorage.setItem('snake_game_access_token', message.token);
               this.wsService.setToken(message.token);
-              // Now that we have a token, connect WebRTC
-              this.webrtcService.connect(message.player.username, message.token);
+              // WebRTC will be connected only when multiplayer game starts (in startPeerToPeerConnection)
+              // Don't connect WebRTC on initial connection - it's only needed for multiplayer games
             }
             // Player is connected but not in lobby yet
             // Frontend will show mode selection (single/multiplayer)
@@ -446,8 +448,8 @@ export class GameService {
     // Get username from token or localStorage
     const username = localStorage.getItem('snake_game_username') || 'player';
     this.wsService.connect(username, token);
-    // Connect WebRTC with token as well
-    this.webrtcService.connect(username, token);
+    // WebRTC will be connected only when multiplayer game starts (in startPeerToPeerConnection)
+    // Don't connect WebRTC on reconnection - it's only needed for multiplayer games
   }
 
   joinLobby(): void {

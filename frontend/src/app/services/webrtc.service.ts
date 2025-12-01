@@ -138,8 +138,15 @@ export class WebRTCService {
       this.reconnectAttempts = 0;
     } catch (error) {
       console.error('Error setting up WebRTC:', error);
-      if (this.shouldReconnect) {
+      // Only attempt reconnect if we're in a multiplayer game context
+      // For single player games or initial connection, don't reconnect
+      // WebRTC is only needed for peer-to-peer multiplayer communication
+      if (this.shouldReconnect && this.playerId) {
+        // Only reconnect if we have a playerId (meaning we're in a game)
         this.attemptReconnect(username, token);
+      } else {
+        console.log('WebRTC connection not needed (single player or not in game), stopping reconnect attempts');
+        this.shouldReconnect = false;
       }
     }
   }
