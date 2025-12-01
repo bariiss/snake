@@ -30,6 +30,8 @@ export class GameComponent implements OnInit, OnDestroy {
   private subscriptions = new Subscription();
   private gameStateTimeout: any = null;
   isReady = false;
+  private previousScores: Map<string, number> = new Map();
+  private audioContext: AudioContext | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -43,11 +45,23 @@ export class GameComponent implements OnInit, OnDestroy {
     this.canvas = this.canvasRef.nativeElement;
     this.ctx = this.canvas.getContext('2d')!;
     this.setupCanvas();
+    
+    // Initialize audio context for sound effects
+    try {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (e) {
+      console.warn('AudioContext not supported:', e);
+    }
 
           // Subscribe to game state updates
           this.subscriptions.add(
             this.gameService.getCurrentGameState().subscribe(state => {
               if (state) {
+                // Check for food eaten (score increase)
+                if (state.status === 'playing' && state.snakes) {
+                  this.checkFoodEaten(state);
+                }
+                
                 this.gameState = state;
                 // Clear timeout if game state is received
                 if (this.gameStateTimeout) {
@@ -73,6 +87,8 @@ export class GameComponent implements OnInit, OnDestroy {
                   if (this.opponentDisconnected) {
                     this.showRematchButton = false;
                   }
+                  // Clear previous scores when game ends
+                  this.previousScores.clear();
                 }
                 // Rematch countdown removed - no longer displaying countdown
                 this.drawGame();
@@ -142,6 +158,54 @@ export class GameComponent implements OnInit, OnDestroy {
       clearTimeout(this.gameStateTimeout);
     }
     this.subscriptions.unsubscribe();
+    if (this.audioContext) {
+      this.audioContext.close();
+    }
+  }
+
+  private checkFoodEaten(state: GameState): void {
+    if (!state.snakes) return;
+    
+    state.snakes.forEach(snake => {
+      const previousScore = this.previousScores.get(snake.id) || 0;
+      const currentScore = snake.score || 0;
+      
+      // If score increased, food was eaten
+      if (currentScore > previousScore) {
+        this.playFoodSound();
+        this.previousScores.set(snake.id, currentScore);
+      } else if (currentScore === 0 && previousScore > 0) {
+        // Score reset (new game started)
+        this.previousScores.set(snake.id, 0);
+      } else if (!this.previousScores.has(snake.id)) {
+        // First time seeing this snake
+        this.previousScores.set(snake.id, currentScore);
+      }
+    });
+  }
+
+  private playFoodSound(): void {
+    if (!this.audioContext) return;
+    
+    try {
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+      
+      // Play a pleasant "pop" sound
+      oscillator.frequency.value = 800; // Higher pitch for food
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+      
+      oscillator.start(this.audioContext.currentTime);
+      oscillator.stop(this.audioContext.currentTime + 0.1);
+    } catch (e) {
+      console.warn('Error playing food sound:', e);
+    }
   }
 
   setupCanvas(): void {

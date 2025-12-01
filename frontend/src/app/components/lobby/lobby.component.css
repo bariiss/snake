@@ -10,15 +10,7 @@
   display: block;
 }
 
-@media (max-width: 1500px) {
-  .lobby-container {
-    width: 95% !important;
-    min-width: 95% !important;
-    max-width: 95% !important;
-  }
-}
-
-@media (max-width: 1200px) {
+@media (max-width: 768px) {
   .lobby-container {
     width: 98% !important;
     min-width: 98% !important;
