@@ -19,7 +19,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   gameRequests: any[] = [];
   pendingRequests: any[] = [];
   currentPlayer: Player | null = null;
-  showModeSelection: boolean = false;
   showUsernameEdit: boolean = false;
   editUsernameValue: string = '';
   errorMessage: string = '';
@@ -42,13 +41,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     window.addEventListener('beforeunload', this.handleBeforeUnload);
     window.addEventListener('storage', this.handleStorageEvent);
 
-    // Load username from local storage
-    const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
-    if (savedUsername) {
-      this.username = savedUsername;
-    }
-    
-    // Check if already connected first
+    // Check if connected - if not, redirect to login
     this.subscriptions.add(
       this.gameService.getCurrentPlayer().subscribe(player => {
         this.currentPlayer = player;
@@ -61,18 +54,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
         // If we have a player, we're connected
         if (player) {
           this.isConnected = true;
-          // Show mode selection when connected (before joining lobby)
-          if (!this.showModeSelection) {
-            this.showModeSelection = true;
-          }
-        } else if (savedUsername && !this.isConnected) {
-          // Not connected but have username - auto-connect
-          // Use setTimeout to avoid race condition
-          setTimeout(() => {
-            if (!this.isConnected && this.username) {
-              this.connect();
-            }
-          }, 100);
+        } else {
+          // Not connected, redirect to login
+          this.isConnected = false;
+          this.router.navigate(['/login']);
         }
       })
     );
@@ -90,11 +75,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
             const bTime = new Date(b.joinedAt || 0).getTime();
             return aTime - bTime;
           });
-        // Hide mode selection once we're in lobby (multiplayer mode selected)
-        // Only hide if we have players AND mode selection was shown
-        if (this.players.length > 0 && this.showModeSelection) {
-          this.showModeSelection = false;
-        }
       })
     );
 
@@ -139,39 +119,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.releaseSessionLock();
   }
 
-  connect(): void {
-    if (this.username.trim()) {
-      const trimmedUsername = this.username.trim();
-      const duplicate = this.players.some(
-        player => player.username?.toLowerCase() === trimmedUsername.toLowerCase()
-      );
-      if (duplicate) {
-        this.errorMessage = 'Nickname already in use. Please choose another.';
-        return;
-      }
-      if (!this.acquireSessionLock()) {
-        this.errorMessage = 'You already have an active game in another tab.';
-        return;
-      }
-      // Save username to local storage
-      localStorage.setItem(this.USERNAME_STORAGE_KEY, trimmedUsername);
-      this.username = trimmedUsername; // Ensure username is set
-      this.gameService.connect(trimmedUsername);
-      // Mode selection will be shown after 'connected' message
-      this.isConnected = true;
-      this.showUsernameEdit = false;
-    }
-  }
 
-  selectSinglePlayer(): void {
-    this.showModeSelection = false;
-    this.gameService.startSinglePlayer();
-  }
-
-  selectMultiplayer(): void {
-    this.showModeSelection = false;
-    this.gameService.joinLobby();
-  }
 
   editUsername(): void {
     this.editUsernameValue = this.currentPlayer?.username || this.username || '';
@@ -209,13 +157,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
       this.currentPlayer = null; // Clear current player
       
       // Wait a bit for backend to process disconnect before reconnecting
+      // Redirect to login to reconnect with new username
       setTimeout(() => {
-        if (this.acquireSessionLock()) {
-          this.gameService.connect(newUsername);
-          // isConnected will be set to true by getCurrentPlayer subscription
-        } else {
-          this.errorMessage = 'Could not acquire session lock. Please try again.';
-        }
+        this.router.navigate(['/login']);
       }, 500);
       
       this.showUsernameEdit = false;
@@ -277,7 +221,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   watchGame(gameId: string): void {
     this.gameService.joinAsSpectator(gameId);
-    this.router.navigate(['/game', gameId]);
+    this.router.navigate(['/game/multiplayer', gameId]);
   }
 
   private acquireSessionLock(): boolean {

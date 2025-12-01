@@ -230,7 +230,8 @@ export class GameService {
             }
             // Start peer-to-peer connection
             this.startPeerToPeerConnection(message);
-            this.router.navigate(['/game', message.game_id]);
+            // Navigate to multiplayer game
+            this.router.navigate(['/game/multiplayer', message.game_id]);
           }
           break;
         case 'peer_offer':
@@ -291,9 +292,13 @@ export class GameService {
           this.currentGameState$.next(message.data);
           // For single player games, navigate to game on first update (countdown starts)
           // Only navigate if we're not already on the game page
-          if (message.data?.id && !previousState && this.router.url !== `/game/${message.data.id}`) {
-            // First game update (countdown) - navigate to game page
-            this.router.navigate(['/game', message.data.id]);
+          if (message.data?.id && !previousState) {
+            const isSinglePlayer = message.data.is_single_player || !message.data.player2;
+            const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
+            if (this.router.url !== gamePath) {
+              // First game update (countdown) - navigate to game page
+              this.router.navigate([isSinglePlayer ? '/game/single' : '/game/multiplayer', message.data.id]);
+            }
           }
           break;
         case 'game_start':
@@ -333,7 +338,7 @@ export class GameService {
             // Automatically redirect to lobby after showing message
             setTimeout(() => {
               this.currentGameState$.next(null); // Clear game state
-              this.router.navigate(['/']);
+              this.router.navigate(['/lobby']);
             }, 2000);
           }
           break;
@@ -372,7 +377,7 @@ export class GameService {
             // Opponent disconnected - show message and return to lobby
             this.showInfoBanner(message.message || 'Opponent has left the game. Returning to lobby...', 'warning');
             this.currentGameState$.next(null); // Clear game state
-            setTimeout(() => this.router.navigate(['/']), 2500);
+            setTimeout(() => this.router.navigate(['/lobby']), 2500);
           } else if (message.code === 'USERNAME_EXISTS') {
             this.connectionError$.next('Username already in use. Please choose another name.');
             this.wsService.disconnect();
@@ -388,6 +393,13 @@ export class GameService {
     this.connectionStatus$.next({ step: 'connecting', completed: false });
     this.wsService.connect(username);
     // Player ID will be set when 'connected' message is received from backend
+  }
+
+  connectWithToken(token: string): void {
+    this.connectionStatus$.next({ step: 'connecting', completed: false });
+    // Get username from token or localStorage
+    const username = localStorage.getItem('snake_game_username') || 'player';
+    this.wsService.connect(username, token);
   }
 
   joinLobby(): void {

@@ -1,26 +1,6 @@
-<div class="lobby-container">
+<div class="lobby-container" *ngIf="isConnected">
   <div class="card lobby-card">
     <h1>🐍 Slither Arena</h1>
-
-    <div *ngIf="!isConnected" class="connect-section">
-      <div *ngIf="errorMessage" class="error-message">
-        <p>{{ errorMessage }}</p>
-        <p class="error-hint">Please choose a different nickname.</p>
-      </div>
-      <p class="connect-subtitle">Enter your nickname to join the arena</p>
-      <div class="input-group">
-        <span class="input-icon">👤</span>
-        <input
-          type="text"
-          [(ngModel)]="username"
-          placeholder="Nickname"
-          (keyup.enter)="connect()"
-        />
-      </div>
-      <div class="button-container">
-        <button class="btn-primary" (click)="connect()">Connect</button>
-      </div>
-    </div>
 
     <!-- Username Edit Modal -->
     <div *ngIf="showUsernameEdit" class="modal-overlay" (click)="cancelEditUsername()">
@@ -47,25 +27,7 @@
       </div>
     </div>
 
-    <!-- Mode Selection Screen -->
-    <div *ngIf="isConnected && showModeSelection" class="mode-selection-section">
-      <h2>Choose Game Mode</h2>
-      <p class="mode-subtitle">How would you like to play?</p>
-      <div class="mode-buttons">
-        <button class="mode-button single-player" (click)="selectSinglePlayer()">
-          <div class="mode-icon">🎮</div>
-          <div class="mode-title">Single Player</div>
-          <div class="mode-description">Play alone and try to beat your high score</div>
-        </button>
-        <button class="mode-button multiplayer" (click)="selectMultiplayer()">
-          <div class="mode-icon">👥</div>
-          <div class="mode-title">Multiplayer</div>
-          <div class="mode-description">Challenge other players in the lobby</div>
-        </button>
-      </div>
-    </div>
-
-    <div *ngIf="isConnected && !showModeSelection" class="lobby-content-wrapper">
+    <div class="lobby-content-wrapper">
       <div class="header-section">
         <div class="header-title">
           <h2>Lobby</h2>

@@ -1,0 +1,22 @@
+<div class="mode-selection-container">
+  <div class="mode-selection-card">
+    <h1>🐍 Slither Arena</h1>
+    <h2>Choose Game Mode</h2>
+    <p class="mode-subtitle">How would you like to play?</p>
+    
+    <div class="mode-buttons">
+      <button class="mode-button single-player" (click)="selectSinglePlayer()">
+        <div class="mode-icon">🎮</div>
+        <div class="mode-title">Single Player</div>
+        <div class="mode-description">Play alone and try to beat your high score</div>
+      </button>
+      
+      <button class="mode-button multiplayer" (click)="selectMultiplayer()">
+        <div class="mode-icon">👥</div>
+        <div class="mode-title">Multiplayer</div>
+        <div class="mode-description">Challenge other players in the lobby</div>
+      </button>
+    </div>
+  </div>
+</div>
+
