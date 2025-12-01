@@ -389,7 +389,6 @@
   gap: 1rem;
   animation: slideInBounce 0.5s ease-out;
   min-width: 0; /* Prevent overflow */
-  flex-wrap: wrap;
 }
 
 @keyframes slideInBounce {
@@ -403,20 +402,6 @@
   100% {
     transform: translateX(0);
     opacity: 1;
-  }
-}
-
-.request-icon {
-  font-size: 2.5rem;
-  animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
   }
 }
 
@@ -455,7 +440,8 @@
   display: flex;
   gap: 12px;
   flex-shrink: 0; /* Prevent buttons from shrinking */
-  flex-wrap: wrap;
+  flex-direction: row; /* Buttons side by side */
+  align-items: center;
 }
 
 .btn-large {
