@@ -179,7 +179,10 @@ export class GameService {
             // Player is connected but not in lobby yet
             // Frontend will show mode selection (single/multiplayer)
             // joinLobby() will be called when multiplayer is selected
-            this.connectionStatus$.next({ step: 'loading_lobby', completed: false });
+            // Set to ready immediately so loading screen closes and mode selection shows
+            setTimeout(() => {
+              this.connectionStatus$.next({ step: 'ready', completed: true });
+            }, 300);
           }
           break;
         case 'lobby_status':
