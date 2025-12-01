@@ -150,14 +150,28 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 	}
 	game.Mutex.Unlock()
 
-	// Send rematch request to other player
-	if otherPlayer != nil {
-		gm.sendMessage(otherPlayer, constants.MSG_REMATCH_REQUEST, map[string]any{
-			"game_id":        gameID,
-			"requester_id":   player.ID,
-			"requester_name": player.Username,
+	// Check if other player is still connected
+	if otherPlayer == nil || otherPlayer.Send == nil {
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "Opponent has left the game. Returning to lobby...",
+			"code":    "OPPONENT_DISCONNECTED",
 		})
+		// Remove player from game and add back to lobby
+		delete(gm.Games, gameID)
+		if player.Send != nil {
+			if _, exists := gm.Lobby.Get(player.ID); !exists {
+				gm.AddToLobby(player)
+			}
+		}
+		return
 	}
+
+	// Send rematch request to other player
+	gm.sendMessage(otherPlayer, constants.MSG_REMATCH_REQUEST, map[string]any{
+		"game_id":        gameID,
+		"requester_id":   player.ID,
+		"requester_name": player.Username,
+	})
 }
 
 func (gm *Manager) HandleRematchAccept(player *models.Player, gameID string) {

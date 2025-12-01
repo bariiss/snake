@@ -326,7 +326,12 @@ export class GameService {
           }
           break;
         case 'error':
-          if (message.code === 'USERNAME_EXISTS') {
+          if (message.code === 'OPPONENT_DISCONNECTED') {
+            // Opponent disconnected - show message and return to lobby
+            this.showInfoBanner(message.message || 'Opponent has left the game. Returning to lobby...', 'warning');
+            this.currentGameState$.next(null); // Clear game state
+            setTimeout(() => this.router.navigate(['/']), 2500);
+          } else if (message.code === 'USERNAME_EXISTS') {
             this.connectionError$.next('Username already in use. Please choose another name.');
             this.wsService.disconnect();
           } else {

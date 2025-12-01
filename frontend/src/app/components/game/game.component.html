@@ -117,7 +117,7 @@
             <p *ngIf="gameState && gameState.winner === 'tie'" class="tie-text">It's a tie! 🎉</p>
           </div>
           
-          <div *ngIf="!isSpectator" class="rematch-section">
+          <div *ngIf="!isSpectator && getOtherPlayer()" class="rematch-section">
             <p *ngIf="rematchRequestedByOpponent" class="rematch-alert">
               {{ rematchRequestMessage }}
             </p>
@@ -143,6 +143,12 @@
             >
               🔄 Request Rematch
             </button>
+          </div>
+          
+          <div *ngIf="!isSpectator && !getOtherPlayer()" class="rematch-section">
+            <p class="rematch-alert" style="color: #ff6b6b;">
+              ⚠️ Opponent has left the game. Returning to lobby...
+            </p>
           </div>
           
           <button class="btn-primary btn-lobby" (click)="backToLobby()">Back to Lobby</button>
