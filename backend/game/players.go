@@ -44,11 +44,23 @@ func (gm *Manager) RemovePlayer(playerID string) {
 						"player":  disconnectedPlayer.Username,
 						"message": disconnectedPlayer.Username + " has left the game",
 					})
+					// Add other player back to lobby if they still have active connection
+					if otherPlayer.Send != nil {
+						if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
+							gm.AddToLobby(otherPlayer)
+						}
+					}
 				} else {
 					gm.sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
 						"from_player": disconnectedPlayer,
 						"message":     fmt.Sprintf("%s left the lobby", disconnectedPlayer.Username),
 					})
+					// Add other player back to lobby if they still have active connection
+					if otherPlayer.Send != nil {
+						if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
+							gm.AddToLobby(otherPlayer)
+						}
+					}
 				}
 			}
 			delete(gm.Games, gameID)
@@ -192,7 +204,8 @@ func (gm *Manager) startRematch(gameID string) {
 		return
 	}
 
-	for i := 10; i > 0; i-- {
+	// Countdown from 5 to 1
+	for i := 5; i > 0; i-- {
 		gm.broadcastToPlayers(game, constants.MSG_REMATCH_COUNTDOWN, map[string]any{
 			"game_id":   gameID,
 			"countdown": i,
@@ -200,13 +213,48 @@ func (gm *Manager) startRematch(gameID string) {
 		time.Sleep(1 * time.Second)
 	}
 
+	// Reset game state and start game directly (no additional countdown)
 	game.Mutex.Lock()
-	game.State.Status = "waiting"
+	game.State.Status = "playing"
 	game.State.Countdown = 0
 	game.State.Winner = ""
 	game.Player1.Ready = false
 	game.Player2.Ready = false
+
+	// Reset snakes
+	snake1 := models.Snake{
+		ID:        game.Player1.ID,
+		Body:      []models.Position{{X: 5, Y: 15}, {X: 4, Y: 15}, {X: 3, Y: 15}},
+		Direction: constants.RIGHT,
+		NextDir:   constants.RIGHT,
+		Color:     "#FF0000",
+		Score:     0,
+		Username:  game.Player1.Username,
+	}
+
+	snake2 := models.Snake{
+		ID:        game.Player2.ID,
+		Body:      []models.Position{{X: 35, Y: 15}, {X: 36, Y: 15}, {X: 37, Y: 15}},
+		Direction: constants.LEFT,
+		NextDir:   constants.LEFT,
+		Color:     "#0000FF",
+		Score:     0,
+		Username:  game.Player2.Username,
+	}
+
+	game.State.Snakes = []models.Snake{snake1, snake2}
+	game.State.Food = models.Food{Position: gm.generateFood([]models.Snake{snake1, snake2})}
+	game.IsActive = true
 	game.Mutex.Unlock()
 
-	gm.StartGame(gameID)
+	// Stop existing ticker if any
+	if game.Ticker != nil {
+		game.Ticker.Stop()
+	}
+
+	game.Ticker = time.NewTicker(constants.TICK_RATE)
+	go gm.gameLoop(game)
+
+	// Broadcast game start
+	gm.broadcastToPlayers(game, constants.MSG_GAME_START, map[string]any{"data": game.State})
 }

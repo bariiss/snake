@@ -271,9 +271,29 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 	game.State.Winner = winner
 	game.Player1.Ready = false
 	game.Player2.Ready = false
+
+	// Get player references before unlocking
+	player1 := game.Player1
+	player2 := game.Player2
 	game.Mutex.Unlock()
 
+	// Broadcast game over
 	gm.broadcastToPlayers(game, constants.MSG_GAME_OVER, map[string]any{"data": stateCopy})
+
+	// Add players back to lobby if they still have active connections
+	// Check if player still exists (has active WebSocket connection)
+	if player1.Send != nil {
+		// Check if player is not already in lobby
+		if _, exists := gm.Lobby.Get(player1.ID); !exists {
+			gm.AddToLobby(player1)
+		}
+	}
+	if player2.Send != nil {
+		// Check if player is not already in lobby
+		if _, exists := gm.Lobby.Get(player2.ID); !exists {
+			gm.AddToLobby(player2)
+		}
+	}
 }
 
 func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
