@@ -691,7 +691,7 @@
   border-radius: 8px;
   transition: all 0.3s ease;
   border: 1px solid #2a2a4a;
-  gap: 1rem;
+  gap: 1.5rem;
   min-width: 0; /* Prevent overflow */
 }
 
