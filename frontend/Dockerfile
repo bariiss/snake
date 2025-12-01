@@ -11,8 +11,15 @@ RUN npm install
 COPY . .
 
 # Build Angular app with environment variables
-ARG API_URL=http://backend:8080
+ARG API_URL=https://snake.li1.nl
 ENV API_URL=$API_URL
+
+# Update environment.prod.ts with API_URL from build arg
+RUN if [ -f src/environments/environment.prod.template.ts ]; then \
+      sed "s|{{API_URL}}|${API_URL}|g" src/environments/environment.prod.template.ts > src/environments/environment.prod.ts; \
+    else \
+      echo "export const environment = { production: true, apiUrl: '${API_URL}' };" > src/environments/environment.prod.ts; \
+    fi
 
 RUN npm run build
 
