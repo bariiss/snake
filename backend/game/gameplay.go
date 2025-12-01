@@ -58,11 +58,13 @@ func (gm *Manager) StartGame(gameID string) {
 	game.Mutex.Lock()
 	game.State.Status = "countdown"
 	game.State.Countdown = 3
+	game.State.IsSinglePlayer = game.IsSinglePlayer
 	game.Mutex.Unlock()
 
 	for i := 3; i > 0; i-- {
 		game.Mutex.Lock()
 		game.State.Countdown = i
+		game.State.IsSinglePlayer = game.IsSinglePlayer
 		game.Mutex.Unlock()
 
 		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": game.State})
@@ -72,6 +74,7 @@ func (gm *Manager) StartGame(gameID string) {
 	game.Mutex.Lock()
 	game.State.Status = "playing"
 	game.State.Countdown = 0
+	game.State.IsSinglePlayer = game.IsSinglePlayer
 
 	snake1 := models.Snake{
 		ID:        game.Player1.ID,
@@ -219,6 +222,8 @@ func (gm *Manager) gameLoop(game *models.Game) {
 
 		winner := gm.checkCollisions(game)
 		if winner != "" {
+			// Ensure IsSinglePlayer flag is set correctly before copying
+			game.State.IsSinglePlayer = game.IsSinglePlayer
 			gameState := game.State
 			game.Mutex.Unlock()
 			// For single player, "game_over" means player lost
@@ -229,6 +234,8 @@ func (gm *Manager) gameLoop(game *models.Game) {
 			return
 		}
 
+		// Ensure IsSinglePlayer flag is set correctly
+		game.State.IsSinglePlayer = game.IsSinglePlayer
 		stateCopy := game.State
 		game.Mutex.Unlock()
 		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
@@ -298,9 +305,17 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 	game.IsActive = false
 	game.State.Status = "finished"
 	game.State.Winner = winner
+	game.State.IsSinglePlayer = game.IsSinglePlayer
 	game.Player1.Ready = false
 	if game.Player2 != nil {
 		game.Player2.Ready = false
+	}
+
+	// Update stateCopy with IsSinglePlayer flag
+	if stateCopy != nil {
+		stateCopy.IsSinglePlayer = game.IsSinglePlayer
+		stateCopy.Status = "finished"
+		stateCopy.Winner = winner
 	}
 
 	// Get player references before unlocking

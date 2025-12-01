@@ -33,13 +33,14 @@ type Food struct {
 }
 
 type GameState struct {
-	ID        string         `json:"id"`
-	Snakes    []Snake        `json:"snakes"`
-	Food      Food           `json:"food"`
-	Status    string         `json:"status"` // "waiting", "countdown", "playing", "finished"
-	Countdown int            `json:"countdown"`
-	Winner    string         `json:"winner,omitempty"`
-	Players   []PlayerStatus `json:"players,omitempty"`
+	ID             string         `json:"id"`
+	Snakes         []Snake        `json:"snakes"`
+	Food           Food           `json:"food"`
+	Status         string         `json:"status"` // "waiting", "countdown", "playing", "finished"
+	Countdown      int            `json:"countdown"`
+	Winner         string         `json:"winner,omitempty"`
+	Players        []PlayerStatus `json:"players,omitempty"`
+	IsSinglePlayer bool           `json:"is_single_player,omitempty"`
 }
 
 type Player struct {

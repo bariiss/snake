@@ -23,9 +23,10 @@ func (gm *Manager) StartSinglePlayerGame(player *models.Player) {
 	}
 
 	game.State = &models.GameState{
-		ID:        gameID,
-		Status:    "countdown",
-		Countdown: 3,
+		ID:             gameID,
+		Status:         "countdown",
+		Countdown:      3,
+		IsSinglePlayer: true,
 		Players: []models.PlayerStatus{
 			{ID: player.ID, Username: player.Username, Ready: true},
 		},
@@ -39,6 +40,7 @@ func (gm *Manager) StartSinglePlayerGame(player *models.Player) {
 	for i := 3; i > 0; i-- {
 		game.Mutex.Lock()
 		game.State.Countdown = i
+		game.State.IsSinglePlayer = true
 		game.Mutex.Unlock()
 
 		gm.sendMessage(player, constants.MSG_GAME_UPDATE, map[string]any{"data": game.State})
@@ -49,6 +51,7 @@ func (gm *Manager) StartSinglePlayerGame(player *models.Player) {
 	game.Mutex.Lock()
 	game.State.Status = "playing"
 	game.State.Countdown = 0
+	game.State.IsSinglePlayer = true
 
 	snake := models.Snake{
 		ID:        player.ID,

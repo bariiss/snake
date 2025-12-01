@@ -27,8 +27,9 @@ func (gm *Manager) SendGameRequest(from *models.Player, toID string) {
 		Spectators: make(map[string]*models.Player),
 	}
 	game.State = &models.GameState{
-		ID:     gameID,
-		Status: "waiting",
+		ID:             gameID,
+		Status:         "waiting",
+		IsSinglePlayer: false,
 		Players: []models.PlayerStatus{
 			{ID: from.ID, Username: from.Username, Ready: false},
 			{ID: target.ID, Username: target.Username, Ready: false},
