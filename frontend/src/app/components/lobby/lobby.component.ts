@@ -51,8 +51,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getCurrentPlayer().subscribe(player => {
         this.currentPlayer = player;
-        // Update username from player if available and not set
-        if (player && player.username && !this.username) {
+        // Update username from player if available
+        if (player && player.username) {
+          // Always update username from player to keep it in sync
           this.username = player.username;
           localStorage.setItem(this.USERNAME_STORAGE_KEY, player.username);
         }
@@ -177,20 +178,21 @@ export class LobbyComponent implements OnInit, OnDestroy {
         return;
       }
       
-      this.username = newUsername;
-      localStorage.setItem(this.USERNAME_STORAGE_KEY, this.username);
+      // Save new username to local storage (will be updated by subscription after reconnect)
+      localStorage.setItem(this.USERNAME_STORAGE_KEY, newUsername);
       
       // Disconnect first to free up old username, then reconnect with new username
       this.gameService.leaveLobby();
       this.gameService.disconnect();
       this.releaseSessionLock();
       this.isConnected = false;
+      this.currentPlayer = null; // Clear current player
       
       // Wait a bit for backend to process disconnect before reconnecting
       setTimeout(() => {
         if (this.acquireSessionLock()) {
-          this.gameService.connect(this.username);
-          this.isConnected = true;
+          this.gameService.connect(newUsername);
+          // isConnected will be set to true by getCurrentPlayer subscription
         } else {
           this.errorMessage = 'Could not acquire session lock. Please try again.';
         }
@@ -198,6 +200,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
       
       this.showUsernameEdit = false;
       this.editUsernameValue = '';
+      this.errorMessage = ''; // Clear any previous errors
     }
   }
 
