@@ -1,6 +1,6 @@
 <div class="app-container">
   <!-- Loading Screen -->
-  <div class="loading-screen" *ngIf="isLoading">
+  <div class="loading-screen" *ngIf="isLoading" [class.disconnecting]="isDisconnecting()">
     <div class="loading-content">
       <div class="snake-emoji">🐍</div>
       <h1 class="game-title">Slither Arena</h1>
