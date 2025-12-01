@@ -332,23 +332,9 @@
 }
 
 .game-requests-section.prominent {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
-  border: 2px solid rgba(255, 193, 7, 0.5);
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
   border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: 0 0 30px rgba(255, 193, 7, 0.3);
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 30px rgba(255, 193, 7, 0.3);
-    border-color: rgba(255, 193, 7, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 50px rgba(255, 193, 7, 0.6);
-    border-color: rgba(255, 193, 7, 0.8);
-  }
 }
 
 .game-requests-section h3 {
@@ -364,28 +350,6 @@
   margin-bottom: 1rem;
 }
 
-.notification-badge {
-  background: #ff6b6b;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  animation: bounce 1s ease-in-out infinite;
-}
-
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
 
 .requests-list {
   display: flex;
