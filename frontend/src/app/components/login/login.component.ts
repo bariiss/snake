@@ -29,9 +29,13 @@ export class LoginComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('snake_game_token');
     const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
     
+    // Clear any existing connection errors first
+    this.gameService.clearConnectionError();
+    
     if (token) {
       // Try to connect with token
       this.isConnecting = true;
+      this.errorMessage = '';
       this.connectWithToken(token);
       
       // Set timeout - if connection doesn't succeed within 5 seconds, clear token and show login form
@@ -39,6 +43,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         if (this.isConnecting) {
           // Still connecting after timeout, clear token and allow manual login
           localStorage.removeItem('snake_game_token');
+          localStorage.removeItem('snake_game_access_token');
           this.isConnecting = false;
           this.errorMessage = 'Connection timeout. Please login again.';
           if (savedUsername) {

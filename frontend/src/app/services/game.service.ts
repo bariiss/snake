@@ -304,6 +304,7 @@ export class GameService {
             // Navigate if we don't have previous state OR if we're not on the correct game page
             if (!previousState || this.router.url !== gamePath) {
               // First game update (countdown) - navigate to game page
+              console.log('Navigating to game:', gamePath, 'isSinglePlayer:', isSinglePlayer);
               this.router.navigate([isSinglePlayer ? '/game/single' : '/game/multiplayer', message.data.id]);
             }
           }
@@ -319,6 +320,7 @@ export class GameService {
           if (message.data?.id) {
             const isSinglePlayer = message.data.is_single_player || !message.data.player2;
             const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
+            console.log('Game started, navigating to:', gamePath, 'isSinglePlayer:', isSinglePlayer);
             if (this.router.url !== gamePath) {
               if (isSinglePlayer) {
                 this.router.navigate(['/game/single', message.data.id]);
