@@ -61,7 +61,7 @@ export class GameService {
   private isSpectator$ = new BehaviorSubject<boolean>(false);
   private banner$ = new BehaviorSubject<{ type: 'info' | 'warning'; message: string } | null>(null);
   private connectionError$ = new BehaviorSubject<string | null>(null);
-  private connectionStatus$ = new BehaviorSubject<{ step: string; completed: boolean }>({ step: 'connecting', completed: false });
+  private connectionStatus$ = new BehaviorSubject<{ step: string; completed: boolean }>({ step: 'idle', completed: false });
 
   constructor(
     private wsService: WebSocketService,
@@ -525,6 +525,8 @@ export class GameService {
     this.wsService.disconnect();
     this.webrtcService.disconnectPeer();
     this.resetState();
+    // Reset connection status when disconnecting
+    this.connectionStatus$.next({ step: 'idle', completed: false });
   }
 
   resetState(): void {
@@ -536,6 +538,8 @@ export class GameService {
     this.activeGames$.next([]);
     this.isSpectator$.next(false);
     this.clearBanner();
+    // Reset connection status to idle (not connecting, so loading won't show)
+    this.connectionStatus$.next({ step: 'idle', completed: false });
   }
 }
 

@@ -230,6 +230,7 @@ export class AppComponent implements OnInit, OnDestroy {
   currentStep = 'connecting';
   completedSteps: string[] = [];
   private subscriptions = new Subscription();
+  private initialLoadComplete = false;
 
   constructor(private gameService: GameService) {}
 
@@ -238,6 +239,23 @@ export class AppComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getConnectionStatus().subscribe(status => {
         this.currentStep = status.step;
+        
+        // Show loading screen when connection starts
+        if (status.step === 'connecting' && !status.completed) {
+          this.isLoading = true;
+          this.completedSteps = []; // Reset completed steps
+        }
+        
+        // Hide loading if we go back to idle (disconnected)
+        if (status.step === 'idle') {
+          // Don't hide immediately, wait a bit in case reconnection happens
+          setTimeout(() => {
+            if (this.currentStep === 'idle') {
+              this.isLoading = false;
+            }
+          }, 300);
+        }
+        
         if (status.completed) {
           if (!this.completedSteps.includes(status.step)) {
             this.completedSteps.push(status.step);
@@ -252,12 +270,14 @@ export class AppComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Fallback: hide loading after 5 seconds if no connection
+    // Initial loading screen - show for 1.5 seconds on first load
     setTimeout(() => {
-      if (this.isLoading && this.currentStep === 'connecting') {
+      this.initialLoadComplete = true;
+      // Only hide if we're idle or not connecting (i.e., no connection attempt yet)
+      if (this.currentStep === 'idle' || (this.currentStep === 'connecting' && this.completedSteps.length === 0)) {
         this.isLoading = false;
       }
-    }, 5000);
+    }, 1500);
   }
 
   ngOnDestroy() {
