@@ -230,7 +230,11 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   disconnect(): void {
-    this.gameService.leaveLobby();
+    // Only leave lobby if we're actually in lobby (multiplayer mode)
+    // Single player games don't require leaving lobby
+    if (this.players.length > 0) {
+      this.gameService.leaveLobby();
+    }
     this.gameService.disconnect();
     // Remove username from local storage
     localStorage.removeItem(this.USERNAME_STORAGE_KEY);

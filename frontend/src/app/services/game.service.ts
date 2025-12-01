@@ -284,6 +284,11 @@ export class GameService {
           break;
         case 'game_update':
           this.currentGameState$.next(message.data);
+          // For single player games, navigate to game on first update (countdown starts)
+          if (message.data?.id && !this.currentGameState$.value) {
+            // First game update (countdown) - navigate to game page
+            this.router.navigate(['/game', message.data.id]);
+          }
           break;
         case 'game_start':
           this.currentGameState$.next({
@@ -292,7 +297,8 @@ export class GameService {
             rematchRequesterName: undefined
           });
           // Navigate to game if we have a game ID (for single player games)
-          if (message.data?.id) {
+          // Only navigate if not already on game page
+          if (message.data?.id && this.router.url !== `/game/${message.data.id}`) {
             this.router.navigate(['/game', message.data.id]);
           }
           break;
@@ -539,20 +545,20 @@ export class GameService {
     
     setTimeout(() => {
       this.connectionStatus$.next({ step: 'disconnecting_peer', completed: true });
-      this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: false });
+      this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
       
-      // Disconnect WebSocket
-      this.wsService.disconnect();
+      // Leave lobby BEFORE disconnecting WebSocket
+      this.leaveLobby();
       
       setTimeout(() => {
-        this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
-        this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
+        this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: true });
+        this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: false });
         
-        // Leave lobby
-        this.leaveLobby();
+        // Disconnect WebSocket after leaving lobby
+        this.wsService.disconnect();
         
         setTimeout(() => {
-          this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: true });
+          this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
           this.connectionStatus$.next({ step: 'disconnected', completed: true });
           
           // Reset state after showing disconnected
