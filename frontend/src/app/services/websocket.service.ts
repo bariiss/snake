@@ -17,13 +17,24 @@ export class WebSocketService {
   private token: string | null = null;
 
   connect(username: string, token?: string): void {
+    // If no token provided and no token in storage, only allow connection for initial login
+    // After initial login, token is required
+    const storedToken = localStorage.getItem('snake_game_token');
+    const finalToken = token || storedToken;
+    
+    // If we have a stored token but trying to connect without it, require token
+    if (storedToken && !token && !username) {
+      console.warn('Token required for WebSocket connection');
+      return;
+    }
+    
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
     this.shouldReconnect = true;
     this.reconnectAttempts = 0;
-    this.token = token || localStorage.getItem('snake_game_token');
+    this.token = finalToken;
     this.setupConnection(username);
   }
 
@@ -42,9 +53,13 @@ export class WebSocketService {
       if (this.token) {
         // Use token for authentication
         wsUrl += `?token=${encodeURIComponent(this.token)}`;
-      } else {
-        // Fallback to username (for initial login)
+      } else if (username) {
+        // Fallback to username (only for initial login, before token is received)
         wsUrl += `?username=${encodeURIComponent(username)}`;
+      } else {
+        // No token and no username - cannot connect
+        console.error('Cannot connect: Token or username required');
+        return;
       }
       this.ws = new WebSocket(wsUrl);
 

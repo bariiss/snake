@@ -32,12 +32,18 @@ export class WebRTCService {
   public peerToPeerMessages$ = this.peerToPeerMessageSubject.asObservable();
   private peerPlayerId: string | null = null;
 
-  connect(username: string): void {
+  connect(username: string, token?: string): void {
+    // WebRTC requires token for authentication
+    const finalToken = token || localStorage.getItem('snake_game_token');
+    if (!finalToken) {
+      console.warn('Token required for WebRTC connection');
+      return;
+    }
     this.shouldReconnect = true;
-    this.setupPeerConnection(username);
+    this.setupPeerConnection(username, finalToken);
   }
 
-  private async setupPeerConnection(username: string): Promise<void> {
+  private async setupPeerConnection(username: string, token: string): Promise<void> {
     try {
       // Create peer connection with STUN servers
       const configuration: RTCConfiguration = {
@@ -83,7 +89,7 @@ export class WebRTCService {
         if (state === 'disconnected' || state === 'failed') {
           console.error('WebRTC connection failed. ICE state:', this.peerConnection?.iceConnectionState);
           if (this.shouldReconnect) {
-            this.attemptReconnect(username);
+            this.attemptReconnect(username, token);
           }
         }
       };
@@ -92,11 +98,12 @@ export class WebRTCService {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
 
-      // Send offer to server
+      // Send offer to server with token
       const response = await fetch(this.getWebRTCUrl() + '/webrtc/offer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           username: username,
@@ -125,7 +132,7 @@ export class WebRTCService {
     } catch (error) {
       console.error('Error setting up WebRTC:', error);
       if (this.shouldReconnect) {
-        this.attemptReconnect(username);
+        this.attemptReconnect(username, token);
       }
     }
   }
@@ -183,12 +190,12 @@ export class WebRTCService {
            this.peerConnection.connectionState === 'connected';
   }
 
-  private attemptReconnect(username: string): void {
+  private attemptReconnect(username: string, token: string): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       setTimeout(() => {
         console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-        this.setupPeerConnection(username);
+        this.setupPeerConnection(username, token);
       }, this.reconnectDelay);
     } else {
       console.error('Max reconnection attempts reached');

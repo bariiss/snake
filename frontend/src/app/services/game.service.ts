@@ -180,6 +180,9 @@ export class GameService {
             // Store token if provided
             if (message.token) {
               localStorage.setItem('snake_game_token', message.token);
+              this.wsService.setToken(message.token);
+              // Now that we have a token, connect WebRTC
+              this.webrtcService.connect(message.player.username, message.token);
             }
             // Player is connected but not in lobby yet
             // Frontend will show mode selection (single/multiplayer)
@@ -412,16 +415,27 @@ export class GameService {
   }
 
   connect(username: string): void {
+    // For initial login, allow connection without token
+    // Token will be received after successful connection
     this.connectionStatus$.next({ step: 'connecting', completed: false });
     this.wsService.connect(username);
     // Player ID will be set when 'connected' message is received from backend
+    // Note: WebRTC is not connected during initial login, only after token is received
   }
 
   connectWithToken(token: string): void {
+    // Token is required for reconnection
+    if (!token) {
+      console.error('Token required for connection');
+      this.connectionError$.next('Token required. Please login again.');
+      return;
+    }
     this.connectionStatus$.next({ step: 'connecting', completed: false });
     // Get username from token or localStorage
     const username = localStorage.getItem('snake_game_username') || 'player';
     this.wsService.connect(username, token);
+    // Connect WebRTC with token as well
+    this.webrtcService.connect(username, token);
   }
 
   joinLobby(): void {
