@@ -251,14 +251,14 @@ func (gm *Manager) checkCollisions(game *models.Game) string {
 		return "tie"
 	}
 
-	// Snake1 head collided with Snake2 body - Snake2 wins
+	// Snake1 head collided with Snake2 body - Snake1 loses, Snake2 wins
 	for _, bodyPart := range game.State.Snakes[1].Body[1:] {
 		if snake1Head.X == bodyPart.X && snake1Head.Y == bodyPart.Y {
 			return game.State.Snakes[1].ID
 		}
 	}
 
-	// Snake2 head collided with Snake1 body - Snake1 wins
+	// Snake2 head collided with Snake1 body - Snake2 loses, Snake1 wins
 	for _, bodyPart := range game.State.Snakes[0].Body[1:] {
 		if snake2Head.X == bodyPart.X && snake2Head.Y == bodyPart.Y {
 			return game.State.Snakes[0].ID
