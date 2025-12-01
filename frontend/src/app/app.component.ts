@@ -53,16 +53,22 @@ export class AppComponent implements OnInit, OnDestroy {
           if (!this.completedSteps.includes(status.step)) {
             this.completedSteps.push(status.step);
           }
-          // If ready, hide loading after a short delay
+          // If ready, hide loading after a short delay (connection process completed)
           if (status.step === 'ready') {
             setTimeout(() => {
-              this.isLoading = false;
+              // Only hide if we're still on ready step (process completed)
+              if (this.currentStep === 'ready') {
+                this.isLoading = false;
+              }
             }, 500);
           }
-          // If disconnected, hide loading after a short delay
+          // If disconnected, hide loading after a short delay (disconnection process completed)
           if (status.step === 'disconnected') {
             setTimeout(() => {
-              this.isLoading = false;
+              // Only hide if we're still on disconnected step (process completed)
+              if (this.currentStep === 'disconnected') {
+                this.isLoading = false;
+              }
             }, 800);
           }
         }

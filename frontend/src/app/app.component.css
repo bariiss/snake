@@ -29,10 +29,8 @@
   50% { background-position: 100% 50%; }
 }
 
-/* Only apply fadeOut animation when not disconnecting */
-.loading-screen:not(.disconnecting) {
-  animation: fadeOut 0.5s ease-out 2s forwards;
-}
+/* Loading screen will be hidden via *ngIf when isLoading becomes false */
+/* No automatic fadeOut - it will only close when connection process completes */
 
 .loading-content {
   text-align: center;
