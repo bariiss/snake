@@ -1,6 +1,7 @@
 package game
 
 import (
+	"log"
 	"math/rand"
 	"time"
 
@@ -238,6 +239,10 @@ func (gm *Manager) gameLoop(game *models.Game) {
 		game.State.IsSinglePlayer = game.IsSinglePlayer
 		stateCopy := game.State
 		game.Mutex.Unlock()
+		// Log for debugging
+		if game.IsSinglePlayer {
+			log.Printf("Single player game update: status=%s, snakes=%d", stateCopy.Status, len(stateCopy.Snakes))
+		}
 		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
 	}
 }
