@@ -370,7 +370,9 @@ export class GameComponent implements OnInit, OnDestroy {
     if (this.gameState.status === 'countdown') {
       return `Game starting in ${this.gameState.countdown}`;
     }
-    // Rematch countdown removed
+    if (this.gameState.status === 'rematch_countdown') {
+      return `Rematch starting in ${this.gameState.countdown || 0}`;
+    }
     return '';
   }
 
