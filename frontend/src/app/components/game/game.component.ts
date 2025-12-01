@@ -74,10 +74,7 @@ export class GameComponent implements OnInit, OnDestroy {
                     this.showRematchButton = false;
                   }
                 }
-                // Handle rematch countdown
-                if (state.status === 'rematch_countdown' && (state as any).countdown) {
-                  this.rematchCountdown = (state as any).countdown;
-                }
+                // Rematch countdown removed - no longer displaying countdown
                 this.drawGame();
               } else {
                 // If game state is null and we're on a game page, check if we should redirect
@@ -373,9 +370,7 @@ export class GameComponent implements OnInit, OnDestroy {
     if (this.gameState.status === 'countdown') {
       return `Game starting in ${this.gameState.countdown}`;
     }
-    if (this.gameState.status === 'rematch_countdown') {
-      return `Rematch in ${this.rematchCountdown}`;
-    }
+    // Rematch countdown removed
     return '';
   }
 

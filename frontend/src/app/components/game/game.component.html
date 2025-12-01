@@ -131,7 +131,6 @@
             <p *ngIf="!rematchRequestedByOpponent && !hasRequestedRematch()" class="rematch-prompt">
               Want to play again?
             </p>
-            <p *ngIf="rematchCountdown > 0" class="rematch-countdown">Rematch starting in: {{ rematchCountdown }}</p>
             
             <button 
               *ngIf="rematchRequestedByOpponent"
