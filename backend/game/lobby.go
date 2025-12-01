@@ -3,10 +3,47 @@ package game
 import (
 	"encoding/json"
 	"log"
+	"strings"
 
 	"snake-backend/constants"
 	"snake-backend/models"
 )
+
+// UsernameExists checks if a username is already in use (in lobby, active games, or spectators)
+// Case-insensitive comparison
+func (gm *Manager) UsernameExists(username string) bool {
+	usernameLower := strings.ToLower(strings.TrimSpace(username))
+	if usernameLower == "" {
+		return false
+	}
+
+	// Check lobby (case-insensitive)
+	if gm.Lobby.ExistsByUsername(username) {
+		return true
+	}
+
+	// Check active games and spectators
+	gm.Mutex.RLock()
+	defer gm.Mutex.RUnlock()
+
+	for _, game := range gm.Games {
+		game.Mutex.RLock()
+		if strings.EqualFold(game.Player1.Username, username) || strings.EqualFold(game.Player2.Username, username) {
+			game.Mutex.RUnlock()
+			return true
+		}
+		// Check spectators
+		for _, spectator := range game.Spectators {
+			if strings.EqualFold(spectator.Username, username) {
+				game.Mutex.RUnlock()
+				return true
+			}
+		}
+		game.Mutex.RUnlock()
+	}
+
+	return false
+}
 
 func (gm *Manager) AddToLobby(player *models.Player) {
 	if added := gm.Lobby.Add(player); !added {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -56,10 +57,27 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	username = strings.TrimSpace(username)
+
+	// Check if username already exists
+	if h.gameManager.UsernameExists(username) {
+		log.Printf("Username %s already exists, closing connection", username)
+		errorMsg := map[string]interface{}{
+			"type":    "error",
+			"code":    "USERNAME_EXISTS",
+			"message": "Username already in use. Please choose another name.",
+		}
+		jsonError, _ := json.Marshal(errorMsg)
+		conn.WriteMessage(websocket.TextMessage, jsonError)
+		conn.Close()
+		return
+	}
+
 	player := &models.Player{
 		ID:       uuid.New().String(),
 		Username: username,
 		Send:     make(chan []byte, 256),
+		JoinedAt: time.Now(),
 	}
 
 	// Add player to lobby
