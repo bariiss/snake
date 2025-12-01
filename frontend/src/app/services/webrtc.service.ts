@@ -122,10 +122,17 @@ export class WebRTCService {
       this.playerId = data.player_id;
 
       // Set remote description (answer from server)
-      await this.peerConnection.setRemoteDescription({
-        type: 'answer',
+      // Validate SDP format before setting
+      if (!data.answer || !data.answer.sdp || typeof data.answer.sdp !== 'string') {
+        throw new Error('Invalid answer format from server');
+      }
+      
+      const answer: RTCSessionDescriptionInit = {
+        type: 'answer' as RTCSdpType,
         sdp: data.answer.sdp
-      });
+      };
+      
+      await this.peerConnection.setRemoteDescription(answer);
 
       console.log('WebRTC connected');
       this.reconnectAttempts = 0;
@@ -331,10 +338,17 @@ export class WebRTCService {
     }
 
     try {
-      await this.peerToPeerConnection.setRemoteDescription({
-        type: 'offer',
+      // Validate offer format
+      if (!offer.offer || !offer.offer.sdp || typeof offer.offer.sdp !== 'string') {
+        throw new Error('Invalid offer format');
+      }
+      
+      const offerDesc: RTCSessionDescriptionInit = {
+        type: 'offer' as RTCSdpType,
         sdp: offer.offer.sdp
-      });
+      };
+      
+      await this.peerToPeerConnection.setRemoteDescription(offerDesc);
 
       // Create answer
       const answer = await this.peerToPeerConnection.createAnswer();
@@ -354,10 +368,17 @@ export class WebRTCService {
     }
 
     try {
-      await this.peerToPeerConnection.setRemoteDescription({
-        type: 'answer',
+      // Validate answer format
+      if (!answer.answer || !answer.answer.sdp || typeof answer.answer.sdp !== 'string') {
+        throw new Error('Invalid answer format');
+      }
+      
+      const answerDesc: RTCSessionDescriptionInit = {
+        type: 'answer' as RTCSdpType,
         sdp: answer.answer.sdp
-      });
+      };
+      
+      await this.peerToPeerConnection.setRemoteDescription(answerDesc);
     } catch (error) {
       console.error('Error handling peer answer:', error);
     }
