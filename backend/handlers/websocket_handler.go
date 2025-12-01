@@ -95,8 +95,8 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		JoinedAt: time.Now(),
 	}
 
-	// Add player to lobby
-	h.gameManager.AddToLobby(player)
+	// Don't add player to lobby automatically - wait for join_lobby message
+	// This allows frontend to show mode selection first
 
 	// Send connected message
 	connectedMsg := map[string]interface{}{

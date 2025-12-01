@@ -61,8 +61,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
         // If we have a player, we're connected
         if (player) {
           this.isConnected = true;
-          // Show mode selection if not already in lobby
-          if (!this.showModeSelection && this.players.length === 0) {
+          // Show mode selection when connected (before joining lobby)
+          if (!this.showModeSelection) {
             this.showModeSelection = true;
           }
         } else if (savedUsername && !this.isConnected) {
@@ -90,8 +90,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
             const bTime = new Date(b.joinedAt || 0).getTime();
             return aTime - bTime;
           });
-        // Hide mode selection once we're in lobby
-        if (this.players.length > 0) {
+        // Hide mode selection once we're in lobby (multiplayer mode selected)
+        // Only hide if we have players AND mode selection was shown
+        if (this.players.length > 0 && this.showModeSelection) {
           this.showModeSelection = false;
         }
       })
