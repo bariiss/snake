@@ -9,10 +9,11 @@
       </div>
       <p class="connect-subtitle">Enter your username to join the arena</p>
       <div class="input-group">
+        <span class="input-icon">👤</span>
         <input
           type="text"
           [(ngModel)]="username"
-          placeholder="Enter your username"
+          placeholder="Username"
           (keyup.enter)="connect()"
         />
       </div>
