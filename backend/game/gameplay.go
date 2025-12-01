@@ -230,6 +230,7 @@ func (gm *Manager) checkCollisions(game *models.Game) string {
 		head := game.State.Snakes[i].Body[0]
 		for j := 1; j < len(game.State.Snakes[i].Body); j++ {
 			if head.X == game.State.Snakes[i].Body[j].X && head.Y == game.State.Snakes[i].Body[j].Y {
+				// Snake i collided with itself, the other snake wins
 				if i == 0 {
 					return game.State.Snakes[1].ID
 				}
@@ -250,12 +251,14 @@ func (gm *Manager) checkCollisions(game *models.Game) string {
 		return "tie"
 	}
 
+	// Snake1 head collided with Snake2 body - Snake2 wins
 	for _, bodyPart := range game.State.Snakes[1].Body[1:] {
 		if snake1Head.X == bodyPart.X && snake1Head.Y == bodyPart.Y {
 			return game.State.Snakes[1].ID
 		}
 	}
 
+	// Snake2 head collided with Snake1 body - Snake1 wins
 	for _, bodyPart := range game.State.Snakes[0].Body[1:] {
 		if snake2Head.X == bodyPart.X && snake2Head.Y == bodyPart.Y {
 			return game.State.Snakes[0].ID
