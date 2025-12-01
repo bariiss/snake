@@ -44,7 +44,24 @@ export class LoginComponent implements OnInit, OnDestroy {
         if (error) {
           this.errorMessage = error;
           this.isConnecting = false;
+          // If error occurs with token, clear token and allow manual login
+          if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN')) {
+            localStorage.removeItem('snake_game_token');
+            this.errorMessage = 'Session expired. Please login again.';
+          }
           this.gameService.clearConnectionError();
+        }
+      })
+    );
+
+    // Listen for error messages from WebSocket
+    this.subscriptions.add(
+      this.gameService.getBanner().subscribe(banner => {
+        if (banner && banner.type === 'warning' && banner.message.includes('Player not found')) {
+          // Token is invalid, clear it
+          localStorage.removeItem('snake_game_token');
+          this.isConnecting = false;
+          this.errorMessage = 'Session expired. Please login again.';
         }
       })
     );

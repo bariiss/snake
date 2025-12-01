@@ -307,10 +307,18 @@ export class GameService {
             rematchRequesterId: undefined,
             rematchRequesterName: undefined
           });
-          // Navigate to game if we have a game ID (for single player games)
-          // Only navigate if not already on game page
-          if (message.data?.id && this.router.url !== `/game/${message.data.id}`) {
-            this.router.navigate(['/game', message.data.id]);
+          // Navigate to game if we have a game ID
+          // Check if single player or multiplayer based on game state
+          if (message.data?.id) {
+            const isSinglePlayer = message.data.is_single_player || !message.data.player2;
+            const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
+            if (this.router.url !== gamePath) {
+              if (isSinglePlayer) {
+                this.router.navigate(['/game/single', message.data.id]);
+              } else {
+                this.router.navigate(['/game/multiplayer', message.data.id]);
+              }
+            }
           }
           break;
         case 'game_over':
@@ -381,8 +389,21 @@ export class GameService {
           } else if (message.code === 'USERNAME_EXISTS') {
             this.connectionError$.next('Username already in use. Please choose another name.');
             this.wsService.disconnect();
+          } else if (message.code === 'INVALID_TOKEN' || message.code === 'PLAYER_NOT_FOUND') {
+            // Token is invalid or player not found - clear token and redirect to login
+            localStorage.removeItem('snake_game_token');
+            this.currentPlayer$.next(null);
+            this.connectionError$.next(message.message || 'Session expired. Please login again.');
+            this.wsService.disconnect();
+            setTimeout(() => {
+              this.router.navigate(['/login']);
+            }, 1000);
           } else {
             console.error('Game error:', message.message);
+            // Show error banner for other errors
+            if (message.message) {
+              this.showInfoBanner(message.message, 'warning');
+            }
           }
           break;
       }
@@ -592,8 +613,7 @@ export class GameService {
   resetState(): void {
     this.currentGameState$.next(null);
     this.lobbyPlayers$.next([]);
-    // Don't reset currentPlayer$ - keep it so lobby can show mode selection
-    // this.currentPlayer$.next(null);
+    this.currentPlayer$.next(null); // Clear player on disconnect
     this.gameRequest$.next([]);
     this.pendingRequest$.next([]);
     this.activeGames$.next([]);
