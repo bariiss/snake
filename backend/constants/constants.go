@@ -34,6 +34,9 @@ const (
 	MSG_REMATCH_START       = "rematch_start"
 	MSG_PLAYER_DISCONNECTED = "player_disconnected"
 	MSG_GAME_REQUEST_CANCEL = "game_request_cancel"
+	MSG_PEER_OFFER          = "peer_offer"
+	MSG_PEER_ANSWER         = "peer_answer"
+	MSG_PEER_ICE_CANDIDATE  = "peer_ice_candidate"
 )
 
 type Direction int

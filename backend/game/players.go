@@ -39,13 +39,13 @@ func (gm *Manager) RemovePlayer(playerID string) {
 			}
 			if otherPlayer != nil && disconnectedPlayer != nil {
 				if isActive {
-					sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
+					gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
 						"game_id": gameID,
 						"player":  disconnectedPlayer.Username,
 						"message": disconnectedPlayer.Username + " has left the game",
 					})
 				} else {
-					sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+					gm.sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
 						"from_player": disconnectedPlayer,
 						"message":     fmt.Sprintf("%s left the lobby", disconnectedPlayer.Username),
 					})
@@ -70,7 +70,7 @@ func (gm *Manager) AddSpectator(player *models.Player, gameID string) {
 	gm.Mutex.RUnlock()
 
 	if !exists {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Game not found",
 			"code":    "GAME_NOT_FOUND",
 		})
@@ -80,7 +80,7 @@ func (gm *Manager) AddSpectator(player *models.Player, gameID string) {
 	game.Mutex.Lock()
 	if game.Player1.ID == player.ID || game.Player2.ID == player.ID {
 		game.Mutex.Unlock()
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "You are already a player in this game",
 			"code":    "ALREADY_PLAYER",
 		})
@@ -99,7 +99,7 @@ func (gm *Manager) AddSpectator(player *models.Player, gameID string) {
 	currentState := game.State
 	game.Mutex.RUnlock()
 
-	sendMessage(player, constants.MSG_SPECTATOR_UPDATE, map[string]any{
+	gm.sendMessage(player, constants.MSG_SPECTATOR_UPDATE, map[string]any{
 		"game_id": gameID,
 		"data":    currentState,
 	})
@@ -113,7 +113,7 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 	gm.Mutex.RUnlock()
 
 	if !exists {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Game not found",
 			"code":    "GAME_NOT_FOUND",
 		})
@@ -123,7 +123,7 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 	game.Mutex.Lock()
 	if game.Player1.ID != player.ID && game.Player2.ID != player.ID {
 		game.Mutex.Unlock()
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Only players can request rematch",
 			"code":    "NOT_A_PLAYER",
 		})
@@ -140,7 +140,7 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 
 	// Send rematch request to other player
 	if otherPlayer != nil {
-		sendMessage(otherPlayer, constants.MSG_REMATCH_REQUEST, map[string]any{
+		gm.sendMessage(otherPlayer, constants.MSG_REMATCH_REQUEST, map[string]any{
 			"game_id":        gameID,
 			"requester_id":   player.ID,
 			"requester_name": player.Username,
@@ -154,7 +154,7 @@ func (gm *Manager) HandleRematchAccept(player *models.Player, gameID string) {
 	gm.Mutex.RUnlock()
 
 	if !exists {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Game not found",
 			"code":    "GAME_NOT_FOUND",
 		})
@@ -164,13 +164,20 @@ func (gm *Manager) HandleRematchAccept(player *models.Player, gameID string) {
 	game.Mutex.Lock()
 	if game.Player1.ID != player.ID && game.Player2.ID != player.ID {
 		game.Mutex.Unlock()
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Only players can accept rematch",
 			"code":    "NOT_A_PLAYER",
 		})
 		return
 	}
 	game.Mutex.Unlock()
+
+	// Notify both players that rematch was accepted
+	gm.broadcastToPlayers(game, constants.MSG_REMATCH_ACCEPT, map[string]any{
+		"game_id":        gameID,
+		"accepted_by":    player.Username,
+		"accepted_by_id": player.ID,
+	})
 
 	// Start rematch
 	go gm.startRematch(gameID)
@@ -186,7 +193,7 @@ func (gm *Manager) startRematch(gameID string) {
 	}
 
 	for i := 10; i > 0; i-- {
-		broadcastToPlayers(game, constants.MSG_REMATCH_COUNTDOWN, map[string]any{
+		gm.broadcastToPlayers(game, constants.MSG_REMATCH_COUNTDOWN, map[string]any{
 			"game_id":   gameID,
 			"countdown": i,
 		})

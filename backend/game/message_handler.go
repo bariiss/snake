@@ -1,0 +1,68 @@
+package game
+
+import (
+	"snake-backend/constants"
+	"snake-backend/models"
+)
+
+// HandleWebRTCMessage handles messages from WebRTC DataChannel
+func (gm *Manager) HandleWebRTCMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+	// Reuse the same message handler
+	gm.handleMessage(player, msgType, msg)
+}
+
+// HandleWebSocketMessage handles messages from WebSocket
+func (gm *Manager) HandleWebSocketMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+	// Reuse the same message handler
+	gm.handleMessage(player, msgType, msg)
+}
+
+// handleMessage processes incoming messages from players
+func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+	switch msgType {
+	case constants.MSG_JOIN_LOBBY:
+		gm.AddToLobby(player)
+	case constants.MSG_LEAVE_LOBBY:
+		gm.RemoveFromLobby(player.ID)
+	case constants.MSG_GAME_REQUEST:
+		if targetID, ok := msg["target_id"].(string); ok {
+			gm.SendGameRequest(player, targetID)
+		}
+	case constants.MSG_GAME_REQUEST_CANCEL:
+		if targetID, ok := msg["target_id"].(string); ok {
+			gm.CancelGameRequest(player, targetID)
+		}
+	case constants.MSG_GAME_ACCEPT:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.AcceptGameRequest(player, gameID)
+		}
+	case constants.MSG_GAME_REJECT:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.RejectGameRequest(player, gameID)
+		}
+	case constants.MSG_PLAYER_READY:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.PlayerReady(player, gameID)
+		}
+	case constants.MSG_PLAYER_MOVE:
+		if gameID, ok := msg["game_id"].(string); ok {
+			if direction, ok := msg["direction"].(string); ok {
+				gm.HandlePlayerMove(player, gameID, direction)
+			}
+		}
+	case constants.MSG_LIST_GAMES:
+		gm.SendGamesList(player)
+	case constants.MSG_JOIN_SPECTATOR:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.AddSpectator(player, gameID)
+		}
+	case constants.MSG_REMATCH_REQUEST:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.HandleRematchRequest(player, gameID)
+		}
+	case constants.MSG_REMATCH_ACCEPT:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.HandleRematchAccept(player, gameID)
+		}
+	}
+}

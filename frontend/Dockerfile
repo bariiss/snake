@@ -12,9 +12,7 @@ COPY . .
 
 # Build Angular app with environment variables
 ARG API_URL=http://backend:8080
-ARG WS_URL=ws://backend:8080
 ENV API_URL=$API_URL
-ENV WS_URL=$WS_URL
 
 RUN npm run build
 

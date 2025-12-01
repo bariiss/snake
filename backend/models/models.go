@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"snake-backend/constants"
-
-	"github.com/gorilla/websocket"
 )
 
 type Position struct {
@@ -45,12 +43,11 @@ type GameState struct {
 }
 
 type Player struct {
-	ID       string          `json:"id"`
-	Conn     *websocket.Conn `json:"-"`
-	Send     chan []byte     `json:"-"`
-	Username string          `json:"username"`
-	Ready    bool            `json:"ready"`
-	JoinedAt time.Time       `json:"joined_at"`
+	ID       string      `json:"id"`
+	Send     chan []byte `json:"-"` // Used for WebSocket
+	Username string      `json:"username"`
+	Ready    bool        `json:"ready"`
+	JoinedAt time.Time   `json:"joined_at"`
 }
 
 type Game struct {

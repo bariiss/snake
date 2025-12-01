@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -13,20 +13,22 @@ export class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private shouldReconnect = true;
+  private playerId: string | null = null;
 
   connect(username: string): void {
-    // Disconnect existing connection if any
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
     this.shouldReconnect = true;
-    
-    const wsUrl = this.getWebSocketUrl();
-    const url = `${wsUrl}/ws?username=${encodeURIComponent(username)}`;
-    
+    this.reconnectAttempts = 0;
+    this.setupConnection(username);
+  }
+
+  private setupConnection(username: string): void {
     try {
-      this.ws = new WebSocket(url);
+      const wsUrl = this.getWebSocketUrl() + `?username=${encodeURIComponent(username)}`;
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('WebSocket connected');
@@ -35,26 +37,14 @@ export class WebSocketService {
 
       this.ws.onmessage = (event) => {
         try {
-          // Backend may send multiple JSON messages separated by newlines
-          const data = event.data;
-          if (typeof data === 'string') {
-            // Split by newlines and parse each message
-            const messages = data.split('\n').filter(line => line.trim().length > 0);
-            for (const messageStr of messages) {
-              try {
-                const message = JSON.parse(messageStr);
-                this.messageSubject.next(message);
-              } catch (parseError) {
-                console.error('Error parsing individual message:', parseError, 'Data:', messageStr);
-              }
-            }
-          } else {
-            // Handle Blob or ArrayBuffer if needed
-            const message = JSON.parse(data);
+          // Split by newline in case multiple messages are concatenated
+          const messages = event.data.split('\n').filter((m: string) => m.trim());
+          messages.forEach((msg: string) => {
+            const message = JSON.parse(msg);
             this.messageSubject.next(message);
-          }
+          });
         } catch (error) {
-          console.error('Error parsing message:', error, 'Raw data:', event.data);
+          console.error('Error parsing WebSocket message:', error, 'Raw data:', event.data);
         }
       };
 
@@ -64,25 +54,19 @@ export class WebSocketService {
 
       this.ws.onclose = (event) => {
         console.log('WebSocket closed', event.code, event.reason);
-        // Only attempt reconnect if not a normal closure
-        if (this.shouldReconnect && event.code !== 1000 && event.code !== 1001) {
-          this.attemptReconnect(username);
+        if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          setTimeout(() => {
+            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            this.setupConnection(username);
+          }, this.reconnectDelay);
         }
       };
     } catch (error) {
-      console.error('Error connecting to WebSocket:', error);
-    }
-  }
-
-  private attemptReconnect(username: string): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => {
-        console.log(`Reconnecting attempt ${this.reconnectAttempts}...`);
-        this.connect(username);
-      }, this.reconnectDelay);
-    } else {
-      console.error('Max reconnection attempts reached');
+      console.error('Error setting up WebSocket:', error);
+      if (this.shouldReconnect) {
+        this.attemptReconnect(username);
+      }
     }
   }
 
@@ -90,53 +74,63 @@ export class WebSocketService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.error('WebSocket is not connected');
+      console.warn('WebSocket not open, message not sent:', message);
     }
   }
 
   disconnect(): void {
     this.shouldReconnect = false;
-    this.reconnectAttempts = 0;
     if (this.ws) {
-      try {
-        this.ws.close(1000, 'client disconnect');
-      } catch (error) {
-        console.error('Error closing WebSocket:', error);
-      }
+      this.ws.close(1000, 'Normal closure');
       this.ws = null;
     }
+    this.playerId = null;
   }
 
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
+  getPlayerId(): string | null {
+    return this.playerId;
+  }
+
+  setPlayerId(id: string): void {
+    this.playerId = id;
+  }
+
+  private attemptReconnect(username: string): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => {
+        console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+        this.setupConnection(username);
+      }, this.reconnectDelay);
+    } else {
+      console.error('Max reconnection attempts reached');
+    }
+  }
+
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    
+
     // Development: Angular dev server (4200) -> Backend (8020)
     if (host === 'localhost' || host === '127.0.0.1') {
-      // Check if we're in development mode (Angular dev server)
       if (window.location.port === '4200' || !window.location.port) {
-        return `${protocol}//${host}:8020`;
+        return `${protocol}//${host}:8020/ws`;
       }
     }
-    
-    // Production: Browser'dan backend'e doğrudan erişim
-    // Docker Compose'da backend 8020 portunda expose edilmiş
-    // Eğer frontend ve backend aynı host'ta ise backend portunu kullan
+
+    // Production: Use environment or default to same host
     if (environment.production) {
-      // Production'da environment'dan al, yoksa host:8020 kullan
-      if (environment.wsUrl && !environment.wsUrl.includes('backend')) {
-        return environment.wsUrl;
-      }
-      // Browser'dan erişilebilir backend URL'i
-      return `${protocol}//${host}:8020`;
+      const apiUrl = environment.apiUrl || `${protocol === 'wss:' ? 'https:' : 'http:'}//${host}`;
+      const baseUrl = apiUrl.replace('/api', '').replace('http://', '').replace('https://', '');
+      return `${protocol}//${baseUrl}/ws`;
     }
-    
-    // Development fallback
-    return environment.wsUrl || `${protocol}//${host}:8020`;
+
+    // Default: Use port 8020 (backend port)
+    return `${protocol}//${host}:8020/ws`;
   }
 }
 

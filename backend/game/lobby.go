@@ -30,22 +30,86 @@ func (gm *Manager) BroadcastLobbyStatus() {
 
 	log.Printf("Broadcasting lobby status to %d players", len(players))
 
-	payload := map[string]any{
-		"type":    constants.MSG_LOBBY_STATUS,
-		"players": players,
+	for _, p := range players {
+		gm.sendMessage(p, constants.MSG_LOBBY_STATUS, map[string]any{
+			"players": players,
+		})
+		log.Printf("Sent lobby status to player %s (%s)", p.ID, p.Username)
+	}
+}
+
+func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[string]any) {
+	message := map[string]any{
+		"type": msgType,
+	}
+	for k, v := range data {
+		message[k] = v
 	}
 
-	data, _ := json.Marshal(payload)
+	jsonData, _ := json.Marshal(message)
 
-	for _, p := range players {
+	// Try WebSocket first (for lobby/matchmaking)
+	if player.Send != nil {
 		select {
-		case p.Send <- data:
-			log.Printf("Sent lobby status to player %s (%s)", p.ID, p.Username)
+		case player.Send <- jsonData:
+			return
 		default:
-			log.Printf("Failed to send lobby status to player %s (%s) - channel full", p.ID, p.Username)
-			close(p.Send)
+			log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
 		}
 	}
+
+	// Fallback to WebRTC (if available)
+	if gm.WebRTCManager != nil {
+		gm.WebRTCManager.SendMessage(player.ID, msgType, data)
+	}
+}
+
+// SendPeerOffer sends a peer-to-peer offer to a player
+func (gm *Manager) SendPeerOffer(playerID string, offer interface{}) {
+	gm.Mutex.RLock()
+	player, exists := gm.Lobby.Get(playerID)
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	// Send via WebSocket (preferred) or WebRTC
+	gm.sendMessage(player, constants.MSG_PEER_OFFER, map[string]any{
+		"offer": offer,
+	})
+}
+
+// SendPeerAnswer sends a peer-to-peer answer to a player
+func (gm *Manager) SendPeerAnswer(playerID string, answer interface{}) {
+	gm.Mutex.RLock()
+	player, exists := gm.Lobby.Get(playerID)
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	// Send via WebSocket (preferred) or WebRTC
+	gm.sendMessage(player, constants.MSG_PEER_ANSWER, map[string]any{
+		"answer": answer,
+	})
+}
+
+// SendICECandidate sends an ICE candidate to a player
+func (gm *Manager) SendICECandidate(playerID string, candidate interface{}) {
+	gm.Mutex.RLock()
+	player, exists := gm.Lobby.Get(playerID)
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	// Send via WebSocket (preferred) or WebRTC
+	gm.sendMessage(player, constants.MSG_PEER_ICE_CANDIDATE, map[string]any{
+		"candidate": candidate,
+	})
 }
 
 func (gm *Manager) SendGamesList(player *models.Player) {
@@ -79,7 +143,7 @@ func (gm *Manager) SendGamesList(player *models.Player) {
 	}
 	gm.Mutex.RUnlock()
 
-	sendMessage(player, constants.MSG_GAMES_LIST, map[string]any{
+	gm.sendMessage(player, constants.MSG_GAMES_LIST, map[string]any{
 		"games": gamesList,
 	})
 }

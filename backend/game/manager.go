@@ -5,6 +5,7 @@ import (
 
 	"snake-backend/lobby"
 	"snake-backend/models"
+	webrtcManager "snake-backend/webrtc"
 )
 
 type Manager struct {
@@ -13,6 +14,11 @@ type Manager struct {
 	PendingRequests map[string]map[string]*models.Game
 	MatchQueue      []*models.Player
 	Mutex           sync.RWMutex
+	WebRTCManager   *webrtcManager.Manager
+}
+
+func (gm *Manager) SetWebRTCManager(webrtcMgr *webrtcManager.Manager) {
+	gm.WebRTCManager = webrtcMgr
 }
 
 func NewGameManager() *Manager {

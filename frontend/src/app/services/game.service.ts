@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { WebSocketService } from './websocket.service';
+import { WebRTCService } from './webrtc.service';
 import { Router } from '@angular/router';
 
 export interface Player {
@@ -62,17 +63,112 @@ export class GameService {
 
   constructor(
     private wsService: WebSocketService,
+    private webrtcService: WebRTCService,
     private router: Router
   ) {
     this.setupMessageHandlers();
+    this.setupPeerToPeerMessageHandlers();
+  }
+
+  private setupPeerToPeerMessageHandlers(): void {
+    // Peer-to-peer messages (game updates, moves, etc.)
+    this.webrtcService.peerToPeerMessages$.subscribe(message => {
+      switch (message.type) {
+        case 'game_update':
+          if (message.data) {
+            this.currentGameState$.next(message.data);
+          }
+          break;
+        case 'game_start':
+          this.currentGameState$.next({
+            ...(message.data || {}),
+            rematchRequesterId: undefined,
+            rematchRequesterName: undefined
+          });
+          break;
+        case 'game_over':
+          this.currentGameState$.next({
+            ...(message.data || {}),
+            rematchRequesterId: undefined,
+            rematchRequesterName: undefined
+          });
+          break;
+        case 'player_move':
+          // Forward player move to server for game logic
+          // (Server still manages game state, peer-to-peer is for low-latency input)
+          this.wsService.send({
+            type: 'player_move',
+            game_id: message.game_id,
+            direction: message.direction
+          });
+          break;
+      }
+    });
+  }
+
+  private startPeerToPeerConnection(message: any): void {
+    // Determine if we're the initiator (Player1) or receiver (Player2)
+    const currentPlayer = this.currentPlayer$.value;
+    if (!currentPlayer || !message.data) return;
+
+    const gameState = message.data;
+    
+    // Find the other player's ID from game state
+    // Try players array first (available in waiting state)
+    let peerPlayerId: string | null = null;
+    let isInitiator = false;
+    
+    if (gameState.players && gameState.players.length >= 2) {
+      // Find our player and the other player
+      const myPlayer = gameState.players.find((p: any) => p.id === currentPlayer.id);
+      const otherPlayer = gameState.players.find((p: any) => p.id !== currentPlayer.id);
+      
+      if (otherPlayer) {
+        peerPlayerId = otherPlayer.id;
+        // First player in array is usually Player1 (initiator)
+        isInitiator = gameState.players[0].id === currentPlayer.id;
+      }
+    } else if (gameState.snakes && gameState.snakes.length >= 2) {
+      // Fallback to snakes array (if game has started)
+      const mySnake = gameState.snakes.find((s: any) => s.id === currentPlayer.id);
+      const otherSnake = gameState.snakes.find((s: any) => s.id !== currentPlayer.id);
+      
+      if (otherSnake) {
+        peerPlayerId = otherSnake.id;
+        // First snake in array is usually Player1 (initiator)
+        isInitiator = gameState.snakes[0].id === currentPlayer.id;
+      }
+    }
+
+    if (peerPlayerId) {
+      console.log(`Starting peer-to-peer connection to ${peerPlayerId} (initiator: ${isInitiator})`);
+      // Set player ID in WebRTC service from WebSocket service
+      const wsPlayerId = this.wsService.getPlayerId();
+      if (wsPlayerId) {
+        this.webrtcService.setPlayerId(wsPlayerId);
+      }
+      this.webrtcService.connectToPeer(peerPlayerId, isInitiator).catch(err => {
+        console.error('Error starting peer-to-peer connection:', err);
+      });
+    } else {
+      console.warn('Could not find peer player ID for peer-to-peer connection', {
+        hasPlayers: !!gameState.players,
+        playersLength: gameState.players?.length,
+        hasSnakes: !!gameState.snakes,
+        snakesLength: gameState.snakes?.length,
+        currentPlayerId: currentPlayer.id
+      });
+    }
   }
 
   private setupMessageHandlers(): void {
+    // Server-client messages (lobby, matchmaking) via WebSocket
     this.wsService.messages$.subscribe(message => {
       switch (message.type) {
         case 'connected':
           if (message.player) {
             this.currentPlayer$.next(message.player);
+            this.wsService.setPlayerId(message.player.id);
             // Update username in case it was changed or not set
             if (message.player.username) {
               localStorage.setItem('snake_game_username', message.player.username);
@@ -121,8 +217,33 @@ export class GameService {
             if (message.data) {
               this.currentGameState$.next(message.data);
             }
+            // Start peer-to-peer connection
+            this.startPeerToPeerConnection(message);
             this.router.navigate(['/game', message.game_id]);
           }
+          break;
+        case 'peer_offer':
+          // Handle peer-to-peer offer (received via WebSocket from server)
+          // Ensure player ID is set before handling offer
+          const wsPlayerId = this.wsService.getPlayerId();
+          if (wsPlayerId) {
+            this.webrtcService.setPlayerId(wsPlayerId);
+          }
+          this.webrtcService.handlePeerOffer(message.offer).catch(err => {
+            console.error('Error handling peer offer:', err);
+          });
+          break;
+        case 'peer_answer':
+          // Handle peer-to-peer answer (received via WebSocket from server)
+          this.webrtcService.handlePeerAnswer(message.answer).catch(err => {
+            console.error('Error handling peer answer:', err);
+          });
+          break;
+        case 'peer_ice_candidate':
+          // Handle peer-to-peer ICE candidate (received via WebSocket from server)
+          this.webrtcService.handleICECandidate(message.candidate).catch(err => {
+            console.error('Error handling ICE candidate:', err);
+          });
           break;
         case 'game_reject':
           // Remove rejected request from pending
@@ -169,7 +290,9 @@ export class GameService {
           // Player disconnected - show message and return to lobby
           if (message.message && message.player) {
             this.showInfoBanner(`${message.player} has left the game. Returning to lobby...`, 'warning');
-            setTimeout(() => this.router.navigate(['/']), 2500);
+            // Clear game state
+            this.currentGameState$.next(null);
+            setTimeout(() => this.router.navigate(['/']), 2000);
           }
           break;
         case 'rematch_request':
@@ -178,6 +301,17 @@ export class GameService {
             rematchRequesterId: message.requester_id,
             rematchRequesterName: message.requester_name
           } as any);
+          break;
+        case 'rematch_accept':
+          // Clear rematch request state when accepted
+          this.currentGameState$.next({
+            ...this.currentGameState$.value,
+            rematchRequesterId: undefined,
+            rematchRequesterName: undefined
+          } as any);
+          if (message.data?.accepted_by) {
+            this.showInfoBanner(`${message.data.accepted_by} accepted the rematch! Starting...`);
+          }
           break;
         case 'rematch_countdown':
           // Rematch countdown
@@ -257,11 +391,21 @@ export class GameService {
   }
 
   sendPlayerMove(gameId: string, direction: string): void {
-    this.wsService.send({
-      type: 'player_move',
-      game_id: gameId,
-      direction: direction
-    });
+    // Try sending via peer-to-peer first (low latency)
+    if (this.webrtcService.isPeerConnected()) {
+      this.webrtcService.sendToPeer({
+        type: 'player_move',
+        game_id: gameId,
+        direction: direction
+      });
+    } else {
+      // Fallback to WebSocket (always available)
+      this.wsService.send({
+        type: 'player_move',
+        game_id: gameId,
+        direction: direction
+      });
+    }
   }
 
   getCurrentGameState(): Observable<GameState | null> {
@@ -308,7 +452,7 @@ export class GameService {
     this.connectionError$.next(null);
   }
 
-  private showInfoBanner(message: string, type: 'info' | 'warning' = 'info'): void {
+  showInfoBanner(message: string, type: 'info' | 'warning' = 'info'): void {
     this.banner$.next({ type, message });
     setTimeout(() => {
       if (this.banner$.value?.message === message) {
@@ -344,6 +488,7 @@ export class GameService {
 
   disconnect(): void {
     this.wsService.disconnect();
+    this.webrtcService.disconnectPeer();
     this.resetState();
   }
 

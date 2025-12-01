@@ -27,6 +27,7 @@ export class GameComponent implements OnInit, OnDestroy {
   private gridWidth = 40;
   private gridHeight = 30;
   private subscriptions = new Subscription();
+  private gameStateTimeout: any = null;
   isReady = false;
 
   constructor(
@@ -47,6 +48,11 @@ export class GameComponent implements OnInit, OnDestroy {
       this.gameService.getCurrentGameState().subscribe(state => {
         if (state) {
           this.gameState = state;
+          // Clear timeout if game state is received
+          if (this.gameStateTimeout) {
+            clearTimeout(this.gameStateTimeout);
+            this.gameStateTimeout = null;
+          }
           // Update ready status based on current player
           if (state.players && this.currentPlayerId) {
             const currentPlayer = state.players.find((p: PlayerStatus) => p.id === this.currentPlayerId);
@@ -86,19 +92,33 @@ export class GameComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.gameService.getBanner().subscribe(banner => {
         this.banner = banner;
+        // If player disconnected, redirect to lobby
+        if (banner && banner.type === 'warning' && banner.message.includes('left the game')) {
+          setTimeout(() => {
+            this.router.navigate(['/']);
+          }, 2000);
+        }
       })
     );
 
     // If no game state yet, check if we already have one from game_accept message
     // The state should be set when navigating to this route
-    setTimeout(() => {
+    // If no state after timeout, redirect to lobby (game might not exist or player disconnected)
+    this.gameStateTimeout = setTimeout(() => {
       if (!this.gameState && this.gameId) {
-        console.log('No game state found, waiting for initial state...');
+        console.log('No game state found after timeout, redirecting to lobby...');
+        this.gameService.showInfoBanner('Game not found or player disconnected. Returning to lobby...', 'warning');
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 1500);
       }
-    }, 100);
+    }, 3000); // Wait 3 seconds for game state
   }
 
   ngOnDestroy(): void {
+    if (this.gameStateTimeout) {
+      clearTimeout(this.gameStateTimeout);
+    }
     this.subscriptions.unsubscribe();
   }
 

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"encoding/json"
 	"math/rand"
 	"time"
 
@@ -34,7 +33,7 @@ func (gm *Manager) PlayerReady(player *models.Player, gameID string) {
 	gameState := game.State
 	game.Mutex.Unlock()
 
-	broadcastToPlayers(game, constants.MSG_GAME_UPDATE, gameState)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, gameState)
 
 	if bothReady {
 		go gm.StartGame(gameID)
@@ -60,7 +59,7 @@ func (gm *Manager) StartGame(gameID string) {
 		game.State.Countdown = i
 		game.Mutex.Unlock()
 
-		broadcastToPlayers(game, constants.MSG_GAME_UPDATE, game.State)
+		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, game.State)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -93,7 +92,7 @@ func (gm *Manager) StartGame(gameID string) {
 	game.IsActive = true
 	game.Mutex.Unlock()
 
-	broadcastToPlayers(game, constants.MSG_GAME_START, game.State)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_START, game.State)
 
 	gm.RemoveFromLobby(game.Player1.ID)
 	gm.RemoveFromLobby(game.Player2.ID)
@@ -123,7 +122,7 @@ func (gm *Manager) HandlePlayerMove(player *models.Player, gameID string, direct
 	game.Mutex.RUnlock()
 
 	if !isPlayer {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Only players can move. Spectators can only watch.",
 			"code":    "NOT_A_PLAYER",
 		})
@@ -222,7 +221,7 @@ func (gm *Manager) gameLoop(game *models.Game) {
 
 		stateCopy := game.State
 		game.Mutex.Unlock()
-		broadcastToPlayers(game, constants.MSG_GAME_UPDATE, stateCopy)
+		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, stateCopy)
 	}
 }
 
@@ -274,7 +273,7 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 	game.Player2.Ready = false
 	game.Mutex.Unlock()
 
-	broadcastToPlayers(game, constants.MSG_GAME_OVER, stateCopy)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_OVER, stateCopy)
 }
 
 func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
@@ -303,28 +302,22 @@ func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
 	}
 }
 
-func broadcastToPlayers(game *models.Game, msgType string, data any) {
-	payload := map[string]any{
-		"type": msgType,
-		"data": data,
-	}
-	jsonData, _ := json.Marshal(payload)
-
-	select {
-	case game.Player1.Send <- jsonData:
-	default:
+func (gm *Manager) broadcastToPlayers(game *models.Game, msgType string, data any) {
+	// Send to Player1 via WebRTC
+	if gm.WebRTCManager != nil {
+		gm.WebRTCManager.SendMessage(game.Player1.ID, msgType, data)
 	}
 
-	select {
-	case game.Player2.Send <- jsonData:
-	default:
+	// Send to Player2 via WebRTC
+	if gm.WebRTCManager != nil {
+		gm.WebRTCManager.SendMessage(game.Player2.ID, msgType, data)
 	}
 
+	// Send to spectators via WebRTC
 	game.Mutex.RLock()
 	for _, spectator := range game.Spectators {
-		select {
-		case spectator.Send <- jsonData:
-		default:
+		if gm.WebRTCManager != nil {
+			gm.WebRTCManager.SendMessage(spectator.ID, msgType, data)
 		}
 	}
 	game.Mutex.RUnlock()

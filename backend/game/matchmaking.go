@@ -12,7 +12,7 @@ import (
 func (gm *Manager) SendGameRequest(from *models.Player, toID string) {
 	target, exists := gm.Lobby.Get(toID)
 	if !exists {
-		sendMessage(from, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(from, constants.MSG_ERROR, map[string]any{
 			"message": "Player not found in lobby",
 		})
 		return
@@ -41,7 +41,7 @@ func (gm *Manager) SendGameRequest(from *models.Player, toID string) {
 	}
 	if _, exists := gm.PendingRequests[toID][from.ID]; exists {
 		gm.Mutex.Unlock()
-		sendMessage(from, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(from, constants.MSG_ERROR, map[string]any{
 			"message": "You already sent a request to this player",
 		})
 		return
@@ -51,12 +51,12 @@ func (gm *Manager) SendGameRequest(from *models.Player, toID string) {
 	gm.PendingRequests[toID][from.ID] = game
 	gm.Mutex.Unlock()
 
-	sendMessage(target, constants.MSG_MATCH_FOUND, map[string]any{
+	gm.sendMessage(target, constants.MSG_MATCH_FOUND, map[string]any{
 		"game_id":     gameID,
 		"from_player": from,
 	})
 
-	sendMessage(from, constants.MSG_GAME_REQUEST_SENT, map[string]any{
+	gm.sendMessage(from, constants.MSG_GAME_REQUEST_SENT, map[string]any{
 		"game_id":   gameID,
 		"to_player": target,
 		"status":    "pending",
@@ -77,13 +77,13 @@ func (gm *Manager) CancelGameRequest(from *models.Player, toID string) {
 			delete(gm.Games, game.ID)
 
 			if target, ok := gm.Lobby.Get(toID); ok {
-				sendMessage(target, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+				gm.sendMessage(target, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
 					"from_player": from,
 					"message":     fmt.Sprintf("%s cancelled the game request", from.Username),
 				})
 			}
 
-			sendMessage(from, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+			gm.sendMessage(from, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
 				"to_player": toID,
 				"status":    "cancelled",
 			})
@@ -97,14 +97,14 @@ func (gm *Manager) AcceptGameRequest(player *models.Player, gameID string) {
 	gm.Mutex.RUnlock()
 
 	if !exists {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "Game not found",
 		})
 		return
 	}
 
 	if game.Player2.ID != player.ID {
-		sendMessage(player, constants.MSG_ERROR, map[string]any{
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "You are not the target player",
 		})
 		return
@@ -129,11 +129,11 @@ func (gm *Manager) AcceptGameRequest(player *models.Player, gameID string) {
 
 	gameState := game.State
 
-	sendMessage(game.Player1, constants.MSG_GAME_ACCEPT, map[string]any{
+	gm.sendMessage(game.Player1, constants.MSG_GAME_ACCEPT, map[string]any{
 		"game_id": gameID,
 		"data":    gameState,
 	})
-	sendMessage(game.Player2, constants.MSG_GAME_ACCEPT, map[string]any{
+	gm.sendMessage(game.Player2, constants.MSG_GAME_ACCEPT, map[string]any{
 		"game_id": gameID,
 		"data":    gameState,
 	})
@@ -159,7 +159,7 @@ func (gm *Manager) RejectGameRequest(player *models.Player, gameID string) {
 		delete(gm.Games, gameID)
 		gm.Mutex.Unlock()
 
-		sendMessage(game.Player1, constants.MSG_GAME_REJECT, map[string]any{
+		gm.sendMessage(game.Player1, constants.MSG_GAME_REJECT, map[string]any{
 			"game_id": gameID,
 		})
 	} else {
