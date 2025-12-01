@@ -311,6 +311,7 @@ export class GameService {
           }
           break;
         case 'game_start':
+          console.log('Received game_start:', message.data?.status, 'gameId:', message.data?.id, 'snakes:', message.data?.snakes?.length);
           this.currentGameState$.next({
             ...(message.data || {}),
             rematchRequesterId: undefined,
