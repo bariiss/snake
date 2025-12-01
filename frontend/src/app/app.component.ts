@@ -12,7 +12,7 @@ import { RouterOutlet } from '@angular/router';
       <div class="loading-screen" *ngIf="isLoading">
         <div class="loading-content">
           <div class="snake-emoji">🐍</div>
-          <h1 class="game-title">Multiplayer Snake Game</h1>
+          <h1 class="game-title">Slither Arena</h1>
           <div class="loading-dots">
             <span></span>
             <span></span>
