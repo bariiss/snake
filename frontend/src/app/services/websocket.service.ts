@@ -28,10 +28,31 @@ export class WebSocketService {
       return;
     }
     
+    // Clean up any existing connection first
     if (this.ws) {
-      this.ws.close();
+      // Prevent reconnection attempts from old connection
+      this.shouldReconnect = false;
+      
+      // Remove event handlers to prevent errors
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        
+        // Close the connection if it's still open
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+          this.ws.close(1000, 'Reconnecting');
+        }
+      } catch (error) {
+        // Ignore errors during cleanup
+        console.warn('Error cleaning up old WebSocket connection (ignored):', error);
+      }
+      
       this.ws = null;
     }
+    
+    // Reset state for new connection
     this.shouldReconnect = true;
     this.reconnectAttempts = 0;
     this.token = finalToken;
@@ -82,7 +103,10 @@ export class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Only log error if connection was actually attempted (not during cleanup)
+        if (this.shouldReconnect) {
+          console.error('WebSocket error:', error);
+        }
       };
 
       this.ws.onclose = (event) => {
@@ -91,13 +115,14 @@ export class WebSocketService {
         // 1. shouldReconnect is true (not manually disconnected)
         // 2. We haven't exceeded max attempts
         // 3. We have a token or username (don't reconnect with invalid tokens)
-        if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+        // 4. The WebSocket instance is still the same (not cleaned up for new connection)
+        if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts && this.ws !== null) {
           const hasToken = this.token || localStorage.getItem('snake_game_token');
           if (hasToken || username) {
             this.reconnectAttempts++;
             setTimeout(() => {
-              // Check again before reconnecting (token might have been cleared)
-              if (this.shouldReconnect && (this.token || localStorage.getItem('snake_game_token') || username)) {
+              // Check again before reconnecting (token might have been cleared, or new connection started)
+              if (this.shouldReconnect && this.ws !== null && (this.token || localStorage.getItem('snake_game_token') || username)) {
                 console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
                 this.setupConnection(username);
               }
@@ -119,7 +144,10 @@ export class WebSocketService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not open, message not sent:', message);
+      // Only warn if we're supposed to be connected (not during disconnect/cleanup)
+      if (this.shouldReconnect) {
+        console.warn('WebSocket not open, message not sent:', message);
+      }
     }
   }
 
