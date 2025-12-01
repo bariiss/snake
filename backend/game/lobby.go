@@ -54,6 +54,46 @@ func (gm *Manager) UsernameExists(username string) bool {
 	return false
 }
 
+// FindPlayerByID finds a player by ID
+func (gm *Manager) FindPlayerByID(playerID string) *models.Player {
+	if playerID == "" {
+		return nil
+	}
+
+	// Check lobby
+	for _, p := range gm.Lobby.Snapshot() {
+		if p.ID == playerID {
+			return p
+		}
+	}
+
+	// Check active games
+	gm.Mutex.RLock()
+	defer gm.Mutex.RUnlock()
+
+	for _, game := range gm.Games {
+		game.Mutex.RLock()
+		if game.Player1 != nil && game.Player1.ID == playerID {
+			game.Mutex.RUnlock()
+			return game.Player1
+		}
+		if game.Player2 != nil && game.Player2.ID == playerID {
+			game.Mutex.RUnlock()
+			return game.Player2
+		}
+		// Check spectators
+		if game.Spectators != nil {
+			if spectator, exists := game.Spectators[playerID]; exists {
+				game.Mutex.RUnlock()
+				return spectator
+			}
+		}
+		game.Mutex.RUnlock()
+	}
+
+	return nil
+}
+
 // FindPlayerByUsername finds a player by username (case-insensitive)
 // Returns the player if found, nil otherwise
 func (gm *Manager) FindPlayerByUsername(username string) *models.Player {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"snake-backend/auth"
 	"snake-backend/game"
 	"snake-backend/models"
 
@@ -39,72 +40,171 @@ func NewWebSocketHandler(gameManager *game.Manager) *WebSocketHandler {
 }
 
 func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Try to get token from query parameter or Authorization header
+	tokenString := r.URL.Query().Get("token")
+	if tokenString == "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			var err error
+			tokenString, err = auth.ExtractTokenFromHeader(authHeader)
+			if err != nil {
+				log.Printf("Invalid authorization header: %v", err)
+				conn, _ := upgrader.Upgrade(w, r, nil)
+				if conn != nil {
+					errorMsg := map[string]interface{}{
+						"type":    "error",
+						"code":    "INVALID_TOKEN",
+						"message": "Invalid or missing token",
+					}
+					jsonError, _ := json.Marshal(errorMsg)
+					conn.WriteMessage(websocket.TextMessage, jsonError)
+					conn.Close()
+				}
+				return
+			}
+		}
+	}
+
+	// If no token, fall back to username-based connection (for initial login)
+	var player *models.Player
+	var username string
+	var token string
+
+	if tokenString != "" {
+		// Validate token
+		claims, err := auth.ValidateToken(tokenString)
+		if err != nil {
+			log.Printf("Token validation error: %v", err)
+			conn, _ := upgrader.Upgrade(w, r, nil)
+			if conn != nil {
+				errorMsg := map[string]interface{}{
+					"type":    "error",
+					"code":    "INVALID_TOKEN",
+					"message": "Invalid token",
+				}
+				jsonError, _ := json.Marshal(errorMsg)
+				conn.WriteMessage(websocket.TextMessage, jsonError)
+				conn.Close()
+			}
+			return
+		}
+
+		// Find player by ID from token
+		player = h.gameManager.FindPlayerByID(claims.PlayerID)
+		if player == nil {
+			log.Printf("Player not found for token: %s", claims.PlayerID)
+			conn, _ := upgrader.Upgrade(w, r, nil)
+			if conn != nil {
+				errorMsg := map[string]interface{}{
+					"type":    "error",
+					"code":    "PLAYER_NOT_FOUND",
+					"message": "Player not found",
+				}
+				jsonError, _ := json.Marshal(errorMsg)
+				conn.WriteMessage(websocket.TextMessage, jsonError)
+				conn.Close()
+			}
+			return
+		}
+
+		token = tokenString
+
+		// If player already has an active connection, close it
+		if player.Send != nil {
+			log.Printf("Player %s already has active connection, closing old connection", player.ID)
+			close(player.Send)
+			player.Send = nil
+			h.gameManager.RemovePlayer(player.ID)
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		// Recreate Send channel for new connection
+		player.Send = make(chan []byte, 256)
+	} else {
+		// Legacy: username-based connection (for initial login)
+		username = r.URL.Query().Get("username")
+		if username == "" {
+			username = r.Header.Get("X-Username")
+		}
+
+		if username == "" {
+			log.Printf("No username or token provided, closing connection")
+			conn, _ := upgrader.Upgrade(w, r, nil)
+			if conn != nil {
+				conn.Close()
+			}
+			return
+		}
+
+		username = strings.TrimSpace(username)
+
+		// Check if username already exists and disconnect old connection if same username
+		existingPlayer := h.gameManager.FindPlayerByUsername(username)
+		if existingPlayer != nil && existingPlayer.Send != nil {
+			// Same username is already connected - close old connection
+			log.Printf("Username %s already connected, closing old connection (old ID: %s)", username, existingPlayer.ID)
+			close(existingPlayer.Send)
+			existingPlayer.Send = nil
+			h.gameManager.RemovePlayer(existingPlayer.ID)
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		// Check again if username exists (after cleanup)
+		if h.gameManager.UsernameExists(username) {
+			log.Printf("Username %s still in use after cleanup, closing connection", username)
+			conn, _ := upgrader.Upgrade(w, r, nil)
+			if conn != nil {
+				errorMsg := map[string]any{
+					"type":    "error",
+					"code":    "USERNAME_EXISTS",
+					"message": "Username already in use. Please choose another name.",
+				}
+				jsonError, _ := json.Marshal(errorMsg)
+				conn.WriteMessage(websocket.TextMessage, jsonError)
+				conn.Close()
+			}
+			return
+		}
+
+		// Create new player
+		player = &models.Player{
+			ID:       uuid.New().String(),
+			Username: username,
+			Send:     make(chan []byte, 256),
+			JoinedAt: time.Now(),
+		}
+
+		// Generate token for new player
+		var err error
+		token, err = auth.GenerateToken(player.ID, player.Username)
+		if err != nil {
+			log.Printf("Error generating token: %v", err)
+			conn, _ := upgrader.Upgrade(w, r, nil)
+			if conn != nil {
+				conn.Close()
+			}
+			return
+		}
+	}
+
+	// Upgrade connection after all checks
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 
-	// Read username from query parameter or header
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		username = r.Header.Get("X-Username")
-	}
-
-	if username == "" {
-		log.Printf("No username provided, closing connection")
-		conn.Close()
-		return
-	}
-
-	username = strings.TrimSpace(username)
-
-	// Check if username already exists and disconnect old connection if same username
-	existingPlayer := h.gameManager.FindPlayerByUsername(username)
-	if existingPlayer != nil && existingPlayer.Send != nil {
-		// Same username is already connected - close old connection
-		log.Printf("Username %s already connected, closing old connection (old ID: %s)", username, existingPlayer.ID)
-		// Close the old WebSocket connection by closing the Send channel
-		// This will trigger the readPump defer which calls RemovePlayer
-		close(existingPlayer.Send)
-		existingPlayer.Send = nil
-		// Remove from lobby and games immediately
-		h.gameManager.RemovePlayer(existingPlayer.ID)
-		// Wait a bit for cleanup
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	// Check again if username exists (after cleanup)
-	if h.gameManager.UsernameExists(username) {
-		log.Printf("Username %s still in use after cleanup, closing connection", username)
-		errorMsg := map[string]interface{}{
-			"type":    "error",
-			"code":    "USERNAME_EXISTS",
-			"message": "Username already in use. Please choose another name.",
-		}
-		jsonError, _ := json.Marshal(errorMsg)
-		conn.WriteMessage(websocket.TextMessage, jsonError)
-		conn.Close()
-		return
-	}
-
-	player := &models.Player{
-		ID:       uuid.New().String(),
-		Username: username,
-		Send:     make(chan []byte, 256),
-		JoinedAt: time.Now(),
-	}
-
 	// Don't add player to lobby automatically - wait for join_lobby message
 	// This allows frontend to show mode selection first
 
-	// Send connected message
+	// Send connected message with token
 	connectedMsg := map[string]interface{}{
 		"type": "connected",
 		"player": map[string]interface{}{
 			"id":       player.ID,
 			"username": player.Username,
 		},
+		"token": token,
 	}
 	jsonData, _ := json.Marshal(connectedMsg)
 	select {

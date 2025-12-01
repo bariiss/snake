@@ -14,20 +14,38 @@ export class WebSocketService {
   private reconnectDelay = 3000;
   private shouldReconnect = true;
   private playerId: string | null = null;
+  private token: string | null = null;
 
-  connect(username: string): void {
+  connect(username: string, token?: string): void {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
     this.shouldReconnect = true;
     this.reconnectAttempts = 0;
+    this.token = token || localStorage.getItem('snake_game_token');
     this.setupConnection(username);
+  }
+
+  setToken(token: string): void {
+    this.token = token;
+    localStorage.setItem('snake_game_token', token);
+  }
+
+  getToken(): string | null {
+    return this.token || localStorage.getItem('snake_game_token');
   }
 
   private setupConnection(username: string): void {
     try {
-      const wsUrl = this.getWebSocketUrl() + `?username=${encodeURIComponent(username)}`;
+      let wsUrl = this.getWebSocketUrl();
+      if (this.token) {
+        // Use token for authentication
+        wsUrl += `?token=${encodeURIComponent(this.token)}`;
+      } else {
+        // Fallback to username (for initial login)
+        wsUrl += `?username=${encodeURIComponent(username)}`;
+      }
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {

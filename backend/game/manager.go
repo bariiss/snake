@@ -9,12 +9,14 @@ import (
 )
 
 type Manager struct {
-	Lobby           *lobby.Service
-	Games           map[string]*models.Game
-	PendingRequests map[string]map[string]*models.Game
-	MatchQueue      []*models.Player
-	Mutex           sync.RWMutex
-	WebRTCManager   *webrtcManager.Manager
+	Lobby               *lobby.Service
+	Games               map[string]*models.Game
+	PendingRequests     map[string]map[string]*models.Game
+	MatchQueue          []*models.Player
+	Mutex               sync.RWMutex
+	WebRTCManager       *webrtcManager.Manager
+	MultiplayerManager  *MultiplayerGameManager
+	SinglePlayerManager *SinglePlayerGameManager
 }
 
 func (gm *Manager) SetWebRTCManager(webrtcMgr *webrtcManager.Manager) {
@@ -22,10 +24,16 @@ func (gm *Manager) SetWebRTCManager(webrtcMgr *webrtcManager.Manager) {
 }
 
 func NewGameManager() *Manager {
-	return &Manager{
+	manager := &Manager{
 		Lobby:           lobby.NewService(),
 		Games:           make(map[string]*models.Game),
 		PendingRequests: make(map[string]map[string]*models.Game),
 		MatchQueue:      make([]*models.Player, 0),
 	}
+
+	// Initialize game mode managers
+	manager.MultiplayerManager = NewMultiplayerGameManager(manager)
+	manager.SinglePlayerManager = NewSinglePlayerGameManager(manager)
+
+	return manager
 }

@@ -176,6 +176,10 @@ export class GameService {
             if (message.player.username) {
               localStorage.setItem('snake_game_username', message.player.username);
             }
+            // Store token if provided
+            if (message.token) {
+              localStorage.setItem('snake_game_token', message.token);
+            }
             // Player is connected but not in lobby yet
             // Frontend will show mode selection (single/multiplayer)
             // joinLobby() will be called when multiplayer is selected
@@ -576,7 +580,8 @@ export class GameService {
   resetState(): void {
     this.currentGameState$.next(null);
     this.lobbyPlayers$.next([]);
-    this.currentPlayer$.next(null);
+    // Don't reset currentPlayer$ - keep it so lobby can show mode selection
+    // this.currentPlayer$.next(null);
     this.gameRequest$.next([]);
     this.pendingRequest$.next([]);
     this.activeGames$.next([]);

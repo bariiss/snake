@@ -42,12 +42,30 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		}
 	case constants.MSG_PLAYER_READY:
 		if gameID, ok := msg["game_id"].(string); ok {
-			gm.PlayerReady(player, gameID)
+			// Check if single player or multiplayer
+			gm.Mutex.RLock()
+			game, exists := gm.Games[gameID]
+			gm.Mutex.RUnlock()
+
+			if exists && game.IsSinglePlayer {
+				gm.SinglePlayerManager.HandlePlayerReady(player, gameID)
+			} else {
+				gm.MultiplayerManager.HandlePlayerReady(player, gameID)
+			}
 		}
 	case constants.MSG_PLAYER_MOVE:
 		if gameID, ok := msg["game_id"].(string); ok {
 			if direction, ok := msg["direction"].(string); ok {
-				gm.HandlePlayerMove(player, gameID, direction)
+				// Check if single player or multiplayer
+				gm.Mutex.RLock()
+				game, exists := gm.Games[gameID]
+				gm.Mutex.RUnlock()
+
+				if exists && game.IsSinglePlayer {
+					gm.SinglePlayerManager.HandlePlayerMove(player, gameID, direction)
+				} else {
+					gm.MultiplayerManager.HandlePlayerMove(player, gameID, direction)
+				}
 			}
 		}
 	case constants.MSG_LIST_GAMES:
@@ -58,11 +76,13 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		}
 	case constants.MSG_REMATCH_REQUEST:
 		if gameID, ok := msg["game_id"].(string); ok {
-			gm.HandleRematchRequest(player, gameID)
+			// Rematch is only for multiplayer games
+			gm.MultiplayerManager.HandleRematchRequest(player, gameID)
 		}
 	case constants.MSG_REMATCH_ACCEPT:
 		if gameID, ok := msg["game_id"].(string); ok {
-			gm.HandleRematchAccept(player, gameID)
+			// Rematch is only for multiplayer games
+			gm.MultiplayerManager.HandleRematchAccept(player, gameID)
 		}
 	case constants.MSG_START_SINGLE_PLAYER:
 		gm.StartSinglePlayerGame(player)
