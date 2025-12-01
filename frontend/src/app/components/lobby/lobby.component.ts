@@ -136,7 +136,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
         player => player.username?.toLowerCase() === trimmedUsername.toLowerCase()
       );
       if (duplicate) {
-        this.errorMessage = 'Username already in use. Please choose another.';
+        this.errorMessage = 'Nickname already in use. Please choose another.';
         return;
       }
       if (!this.acquireSessionLock()) {
@@ -174,7 +174,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
         player => player.username?.toLowerCase() === newUsername.toLowerCase()
       );
       if (duplicate) {
-        this.errorMessage = 'Username already in use. Please choose another.';
+        this.errorMessage = 'Nickname already in use. Please choose another.';
         return;
       }
       

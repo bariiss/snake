@@ -5,15 +5,15 @@
     <div *ngIf="!isConnected" class="connect-section">
       <div *ngIf="errorMessage" class="error-message">
         <p>{{ errorMessage }}</p>
-        <p class="error-hint">Please choose a different username.</p>
+        <p class="error-hint">Please choose a different nickname.</p>
       </div>
-      <p class="connect-subtitle">Enter your username to join the arena</p>
+      <p class="connect-subtitle">Enter your nickname to join the arena</p>
       <div class="input-group">
         <span class="input-icon">👤</span>
         <input
           type="text"
           [(ngModel)]="username"
-          placeholder="Username"
+          placeholder="Nickname"
           (keyup.enter)="connect()"
         />
       </div>
@@ -26,15 +26,16 @@
     <div *ngIf="showUsernameEdit" class="modal-overlay" (click)="cancelEditUsername()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>Update Username</h3>
+          <h3>Update Nickname</h3>
           <button class="btn-close-modal" (click)="cancelEditUsername()">✕</button>
         </div>
         <div class="modal-body">
           <div class="input-group">
+            <span class="input-icon">👤</span>
             <input
               type="text"
               [(ngModel)]="editUsernameValue"
-              placeholder="Enter new username"
+              placeholder="Enter new nickname"
               (keyup.enter)="updateUsername()"
             />
           </div>
@@ -55,7 +56,7 @@
           </p>
         </div>
         <div class="header-actions">
-          <button class="btn-secondary btn-outline" (click)="editUsername()" title="Change username">
+          <button class="btn-secondary btn-outline" (click)="editUsername()" title="Change nickname">
             ✏️ Edit
           </button>
           <button class="btn-danger" (click)="disconnect()">Disconnect</button>
