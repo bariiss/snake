@@ -160,7 +160,8 @@ func (gm *Manager) RejectGameRequest(player *models.Player, gameID string) {
 		gm.Mutex.Unlock()
 
 		gm.sendMessage(game.Player1, constants.MSG_GAME_REJECT, map[string]any{
-			"game_id": gameID,
+			"game_id":     gameID,
+			"from_player": player,
 		})
 	} else {
 		gm.Mutex.Unlock()

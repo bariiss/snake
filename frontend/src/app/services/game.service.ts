@@ -252,6 +252,12 @@ export class GameService {
             (req: any) => req.game_id !== message.game_id
           );
           this.pendingRequest$.next(pendingAfterReject);
+          // Show notification that request was rejected
+          if (message.from_player) {
+            this.showInfoBanner(`${message.from_player.username} rejected your game request.`, 'warning');
+          } else {
+            this.showInfoBanner('Your game request was rejected.', 'warning');
+          }
           break;
         case 'game_request_cancel':
           // Remove cancelled request

@@ -60,112 +60,128 @@
         </div>
       </div>
 
-      <!-- Game Requests (Multiple) -->
-      <div *ngIf="gameRequests.length > 0" class="game-requests-section">
-        <h3>Game Requests ({{ gameRequests.length }})</h3>
-        <div class="requests-list">
-          <div *ngFor="let request of gameRequests" class="request-item">
-            <div class="request-info">
-              <span class="request-from">{{ request.from_player?.username }}</span>
-              <span class="request-text">wants to play with you</span>
-            </div>
-            <div class="request-actions">
-              <button class="btn-success" (click)="acceptGameRequest(request.game_id)">
-                Accept
-              </button>
-              <button class="btn-danger" (click)="rejectGameRequest(request.game_id)">
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pending Requests (Multiple) -->
-      <div *ngIf="pendingRequests.length > 0" class="pending-requests-section">
-        <h3>Pending Requests ({{ pendingRequests.length }})</h3>
-        <div class="pending-list">
-          <div *ngFor="let request of pendingRequests" class="pending-item">
-            <div class="pending-info">
-              <span class="pending-text">Waiting for</span>
-              <span class="pending-to">{{ request.to_player?.username }}</span>
-              <span class="pending-text">to respond...</span>
-            </div>
-            <button class="btn-cancel" (click)="cancelGameRequest(request.to_player?.id)">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="players-section">
-        <h3>Players ({{ players.length }})</h3>
-        <div class="players-list">
-          <div
-            *ngFor="let player of players"
-            class="player-item"
-            [class.current-player]="isCurrentPlayer(player.id)"
-          >
-            <div class="player-info">
-              <span class="player-name">{{ player.username }}</span>
-              <span *ngIf="isCurrentPlayer(player.id)" class="you-badge">You</span>
-              <span *ngIf="!isCurrentPlayer(player.id) && player.in_game" class="in-game-badge">In Game</span>
-            </div>
-            <div *ngIf="!isCurrentPlayer(player.id) && !player.in_game" class="player-actions">
-              <button
-                *ngIf="!hasPendingRequestTo(player.id)"
-                class="btn-secondary btn-small"
-                (click)="sendGameRequest(player.id)"
+      <!-- Two Column Layout -->
+      <div class="lobby-main-content">
+        <!-- Left Column: Players List -->
+        <div class="lobby-left-column">
+          <div class="players-section">
+            <h3>Players ({{ players.length }})</h3>
+            <div class="players-list">
+              <div
+                *ngFor="let player of players"
+                class="player-item"
+                [class.current-player]="isCurrentPlayer(player.id)"
               >
-                Send Request
-              </button>
-              <div *ngIf="hasPendingRequestTo(player.id)" class="request-status">
-                <span class="status-text">Request sent</span>
-                <button
-                  class="btn-cancel-small"
-                  (click)="cancelGameRequest(player.id)"
-                  title="Cancel request"
-                >
-                  ✕
+                <div class="player-info">
+                  <span class="player-name">{{ player.username }}</span>
+                  <span *ngIf="isCurrentPlayer(player.id)" class="you-badge">You</span>
+                  <span *ngIf="!isCurrentPlayer(player.id) && player.in_game" class="in-game-badge">In Game</span>
+                </div>
+                <div *ngIf="!isCurrentPlayer(player.id) && !player.in_game" class="player-actions">
+                  <button
+                    *ngIf="!hasPendingRequestTo(player.id)"
+                    class="btn-secondary btn-small"
+                    (click)="sendGameRequest(player.id)"
+                  >
+                    Send Request
+                  </button>
+                  <div *ngIf="hasPendingRequestTo(player.id)" class="request-status">
+                    <span class="status-text">Request sent</span>
+                    <button
+                      class="btn-cancel-small"
+                      (click)="cancelGameRequest(player.id)"
+                      title="Cancel request"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Requests and Info -->
+        <div class="lobby-right-column">
+          <!-- Game Requests (Multiple) - Prominent -->
+          <div *ngIf="gameRequests.length > 0" class="game-requests-section prominent">
+            <div class="section-header">
+              <h3>🎮 Game Requests ({{ gameRequests.length }})</h3>
+              <span class="notification-badge">{{ gameRequests.length }}</span>
+            </div>
+            <div class="requests-list">
+              <div *ngFor="let request of gameRequests" class="request-item prominent-request">
+                <div class="request-icon">🎯</div>
+                <div class="request-content">
+                  <div class="request-info">
+                    <span class="request-from">{{ request.from_player?.username }}</span>
+                    <span class="request-text">wants to play with you!</span>
+                  </div>
+                  <div class="request-actions">
+                    <button class="btn-success btn-large" (click)="acceptGameRequest(request.game_id)">
+                      ✓ Accept
+                    </button>
+                    <button class="btn-danger btn-large" (click)="rejectGameRequest(request.game_id)">
+                      ✕ Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pending Requests (Multiple) -->
+          <div *ngIf="pendingRequests.length > 0" class="pending-requests-section">
+            <h3>Pending Requests ({{ pendingRequests.length }})</h3>
+            <div class="pending-list">
+              <div *ngFor="let request of pendingRequests" class="pending-item">
+                <div class="pending-info">
+                  <span class="pending-text">Waiting for</span>
+                  <span class="pending-to">{{ request.to_player?.username }}</span>
+                  <span class="pending-text">to respond...</span>
+                </div>
+                <button class="btn-cancel" (click)="cancelGameRequest(request.to_player?.id)">
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="active-games-section">
-        <h3>Active Games ({{ activeGames.length }})</h3>
-        <div class="games-list">
-          <div *ngFor="let game of activeGames" class="game-item">
-            <div class="game-info">
-              <div class="game-players">
-                <span class="player-name">{{ game.player1 }}</span>
-                <span class="vs">vs</span>
-                <span class="player-name">{{ game.player2 }}</span>
-              </div>
-              <div class="game-status">
-                <span class="status-badge" [class.playing]="game.status === 'playing'" 
-                      [class.waiting]="game.status === 'waiting'"
-                      [class.finished]="game.status === 'finished'">
-                  {{ game.status }}
-                </span>
-                <span *ngIf="game.spectators > 0" class="spectators-count">
-                  👁️ {{ game.spectators }}
-                </span>
-              </div>
-              <div *ngIf="game.scores" class="game-scores">
-                <span>{{ game.player1 }}: {{ game.scores[game.player1] }}</span>
-                <span>{{ game.player2 }}: {{ game.scores[game.player2] }}</span>
+          <!-- Active Games -->
+          <div class="active-games-section">
+            <h3>Active Games ({{ activeGames.length }})</h3>
+            <div class="games-list">
+              <div *ngFor="let game of activeGames" class="game-item">
+                <div class="game-info">
+                  <div class="game-players">
+                    <span class="player-name">{{ game.player1 }}</span>
+                    <span class="vs">vs</span>
+                    <span class="player-name">{{ game.player2 }}</span>
+                  </div>
+                  <div class="game-status">
+                    <span class="status-badge" [class.playing]="game.status === 'playing'" 
+                          [class.waiting]="game.status === 'waiting'"
+                          [class.finished]="game.status === 'finished'">
+                      {{ game.status }}
+                    </span>
+                    <span *ngIf="game.spectators > 0" class="spectators-count">
+                      👁️ {{ game.spectators }}
+                    </span>
+                  </div>
+                  <div *ngIf="game.scores" class="game-scores">
+                    <span>{{ game.player1 }}: {{ game.scores[game.player1] }}</span>
+                    <span>{{ game.player2 }}: {{ game.scores[game.player2] }}</span>
+                  </div>
+                </div>
+                <button
+                  *ngIf="game.status !== 'finished'"
+                  class="btn-secondary"
+                  (click)="watchGame(game.id)"
+                >
+                  Watch
+                </button>
               </div>
             </div>
-            <button
-              *ngIf="game.status !== 'finished'"
-              class="btn-secondary"
-              (click)="watchGame(game.id)"
-            >
-              Watch
-            </button>
           </div>
         </div>
       </div>
