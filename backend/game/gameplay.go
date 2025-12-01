@@ -33,7 +33,7 @@ func (gm *Manager) PlayerReady(player *models.Player, gameID string) {
 	gameState := game.State
 	game.Mutex.Unlock()
 
-	gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, gameState)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": gameState})
 
 	if bothReady {
 		go gm.StartGame(gameID)
@@ -59,7 +59,7 @@ func (gm *Manager) StartGame(gameID string) {
 		game.State.Countdown = i
 		game.Mutex.Unlock()
 
-		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, game.State)
+		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": game.State})
 		time.Sleep(1 * time.Second)
 	}
 
@@ -92,7 +92,7 @@ func (gm *Manager) StartGame(gameID string) {
 	game.IsActive = true
 	game.Mutex.Unlock()
 
-	gm.broadcastToPlayers(game, constants.MSG_GAME_START, game.State)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_START, map[string]any{"data": game.State})
 
 	gm.RemoveFromLobby(game.Player1.ID)
 	gm.RemoveFromLobby(game.Player2.ID)
@@ -221,7 +221,7 @@ func (gm *Manager) gameLoop(game *models.Game) {
 
 		stateCopy := game.State
 		game.Mutex.Unlock()
-		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, stateCopy)
+		gm.broadcastToPlayers(game, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
 	}
 }
 
@@ -273,7 +273,7 @@ func (gm *Manager) endGame(game *models.Game, winner string, stateCopy *models.G
 	game.Player2.Ready = false
 	game.Mutex.Unlock()
 
-	gm.broadcastToPlayers(game, constants.MSG_GAME_OVER, stateCopy)
+	gm.broadcastToPlayers(game, constants.MSG_GAME_OVER, map[string]any{"data": stateCopy})
 }
 
 func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
@@ -302,23 +302,17 @@ func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
 	}
 }
 
-func (gm *Manager) broadcastToPlayers(game *models.Game, msgType string, data any) {
-	// Send to Player1 via WebRTC
-	if gm.WebRTCManager != nil {
-		gm.WebRTCManager.SendMessage(game.Player1.ID, msgType, data)
-	}
+func (gm *Manager) broadcastToPlayers(game *models.Game, msgType string, data map[string]any) {
+	// Send to Player1 (prioritize WebSocket, fallback to WebRTC)
+	gm.sendMessage(game.Player1, msgType, data)
 
-	// Send to Player2 via WebRTC
-	if gm.WebRTCManager != nil {
-		gm.WebRTCManager.SendMessage(game.Player2.ID, msgType, data)
-	}
+	// Send to Player2 (prioritize WebSocket, fallback to WebRTC)
+	gm.sendMessage(game.Player2, msgType, data)
 
-	// Send to spectators via WebRTC
+	// Send to spectators (prioritize WebSocket, fallback to WebRTC)
 	game.Mutex.RLock()
 	for _, spectator := range game.Spectators {
-		if gm.WebRTCManager != nil {
-			gm.WebRTCManager.SendMessage(spectator.ID, msgType, data)
-		}
+		gm.sendMessage(spectator, msgType, data)
 	}
 	game.Mutex.RUnlock()
 }
