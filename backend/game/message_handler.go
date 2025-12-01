@@ -86,5 +86,9 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		}
 	case constants.MSG_START_SINGLE_PLAYER:
 		gm.StartSinglePlayerGame(player)
+	case constants.MSG_GET_GAME_STATE:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.SendGameState(player, gameID)
+		}
 	}
 }

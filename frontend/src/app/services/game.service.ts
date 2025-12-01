@@ -468,6 +468,10 @@ export class GameService {
     this.wsService.send({ type: 'start_single_player' });
   }
 
+  requestGameState(gameId: string): void {
+    this.wsService.send({ type: 'get_game_state', game_id: gameId });
+  }
+
   leaveLobby(): void {
     this.wsService.send({ type: 'leave_lobby' });
   }

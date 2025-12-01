@@ -332,3 +332,39 @@ func (gm *Manager) BroadcastGamesList() {
 		gm.SendGamesList(p)
 	}
 }
+
+// SendGameState sends the current game state to a player
+func (gm *Manager) SendGameState(player *models.Player, gameID string) {
+	gm.Mutex.RLock()
+	game, exists := gm.Games[gameID]
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "Game not found",
+			"code":    "GAME_NOT_FOUND",
+		})
+		return
+	}
+
+	// Check if player is part of this game
+	game.Mutex.RLock()
+	isPlayer := game.Player1.ID == player.ID || (game.Player2 != nil && game.Player2.ID == player.ID)
+	isSpectator := game.Spectators[player.ID] != nil
+	game.Mutex.RUnlock()
+
+	if !isPlayer && !isSpectator {
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "You are not part of this game",
+			"code":    "NOT_A_PLAYER",
+		})
+		return
+	}
+
+	// Send current game state
+	game.Mutex.RLock()
+	stateCopy := game.State
+	game.Mutex.RUnlock()
+
+	gm.sendMessage(player, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
+}
