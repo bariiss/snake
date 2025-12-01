@@ -242,21 +242,37 @@ func (gm *Manager) SendGamesList(player *models.Player) {
 		gameInfo := map[string]any{
 			"id":         gameID,
 			"player1":    game.Player1.Username,
-			"player2":    game.Player2.Username,
 			"status":     game.State.Status,
 			"spectators": len(game.Spectators),
 		}
+		// Only include player2 if it's a multiplayer game
+		if !game.IsSinglePlayer && game.Player2 != nil {
+			gameInfo["player2"] = game.Player2.Username
+		}
 		if game.State.Status == "playing" {
-			gameInfo["scores"] = map[string]int{
-				game.Player1.Username: 0,
-				game.Player2.Username: 0,
-			}
-			for _, snake := range game.State.Snakes {
-				switch snake.ID {
-				case game.Player1.ID:
-					gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
-				case game.Player2.ID:
-					gameInfo["scores"].(map[string]int)[game.Player2.Username] = snake.Score
+			if game.IsSinglePlayer {
+				// Single player game - only one score
+				gameInfo["scores"] = map[string]int{
+					game.Player1.Username: 0,
+				}
+				for _, snake := range game.State.Snakes {
+					if snake.ID == game.Player1.ID {
+						gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
+					}
+				}
+			} else {
+				// Multiplayer game - two scores
+				gameInfo["scores"] = map[string]int{
+					game.Player1.Username: 0,
+					game.Player2.Username: 0,
+				}
+				for _, snake := range game.State.Snakes {
+					switch snake.ID {
+					case game.Player1.ID:
+						gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
+					case game.Player2.ID:
+						gameInfo["scores"].(map[string]int)[game.Player2.Username] = snake.Score
+					}
 				}
 			}
 		}

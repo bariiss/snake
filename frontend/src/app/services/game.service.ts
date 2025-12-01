@@ -283,9 +283,11 @@ export class GameService {
           }
           break;
         case 'game_update':
+          const previousState = this.currentGameState$.value;
           this.currentGameState$.next(message.data);
           // For single player games, navigate to game on first update (countdown starts)
-          if (message.data?.id && !this.currentGameState$.value) {
+          // Only navigate if we're not already on the game page
+          if (message.data?.id && !previousState && this.router.url !== `/game/${message.data.id}`) {
             // First game update (countdown) - navigate to game page
             this.router.navigate(['/game', message.data.id]);
           }

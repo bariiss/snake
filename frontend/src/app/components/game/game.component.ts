@@ -53,77 +53,85 @@ export class GameComponent implements OnInit, OnDestroy {
       console.warn('AudioContext not supported:', e);
     }
 
-          // Subscribe to game state updates
-          this.subscriptions.add(
-            this.gameService.getCurrentGameState().subscribe(state => {
-              if (state) {
-                // Check for food eaten (score increase)
-                if (state.status === 'playing' && state.snakes) {
-                  this.checkFoodEaten(state);
-                }
-                
-                this.gameState = state;
-                // Clear timeout if game state is received
-                if (this.gameStateTimeout) {
-                  clearTimeout(this.gameStateTimeout);
-                  this.gameStateTimeout = null;
-                }
-                // Update ready status based on current player
-                if (state.players && this.currentPlayerId) {
-                  const currentPlayer = state.players.find((p: PlayerStatus) => p.id === this.currentPlayerId);
-                  this.isReady = currentPlayer?.ready || false;
-                  
-                  // Check if opponent disconnected (other player not in players list or game status is finished)
-                  const otherPlayer = state.players.find((p: PlayerStatus) => p.id !== this.currentPlayerId);
-                  this.opponentDisconnected = !otherPlayer && state.status === 'finished';
-                }
-                // Check if game is finished to show rematch button
-                if (state.status === 'finished' && !this.isSpectator) {
-                  this.showRematchButton = true;
-                  // Update statistics
-                  this.updateGameStats(state);
-                  
-                  // If opponent disconnected and game is finished, don't show rematch
-                  if (this.opponentDisconnected) {
-                    this.showRematchButton = false;
-                  }
-                  // Clear previous scores when game ends
-                  this.previousScores.clear();
-                }
-                // Rematch countdown removed - no longer displaying countdown
-                this.drawGame();
-              } else {
-                // If game state is null and we're on a game page, check if we should redirect
-                // This handles page refresh when game doesn't exist or is finished
-                if (this.gameId && !this.isSpectator) {
-                  // Wait a bit to see if state arrives, then redirect if still null
-                  setTimeout(() => {
-                    if (!this.gameState) {
-                      console.log('Game state is null, redirecting to lobby...');
-                      this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
-                      setTimeout(() => {
-                        this.router.navigate(['/']);
-                      }, 1500);
-                    }
-                  }, 2000);
-                }
-              }
-            })
-          );
-
-    // Check if spectator mode
-    this.subscriptions.add(
-      this.gameService.isSpectator().subscribe(isSpec => {
-        this.isSpectator = isSpec;
-      })
-    );
-
-    // Get current player ID
+    // Get current player ID first
     this.subscriptions.add(
       this.gameService.getCurrentPlayer().subscribe(player => {
         if (player) {
           this.currentPlayerId = player.id;
         }
+      })
+    );
+
+    // Subscribe to game state updates
+    this.subscriptions.add(
+      this.gameService.getCurrentGameState().subscribe(state => {
+        if (state) {
+          // Check if this state belongs to the current game
+          if (state.id && state.id !== this.gameId) {
+            // Different game, ignore
+            return;
+          }
+          
+          // Check for food eaten (score increase)
+          if (state.status === 'playing' && state.snakes) {
+            this.checkFoodEaten(state);
+          }
+          
+          this.gameState = state;
+          // Clear timeout if game state is received
+          if (this.gameStateTimeout) {
+            clearTimeout(this.gameStateTimeout);
+            this.gameStateTimeout = null;
+          }
+          // Update ready status based on current player
+          if (state.players && this.currentPlayerId) {
+            const currentPlayer = state.players.find((p: PlayerStatus) => p.id === this.currentPlayerId);
+            this.isReady = currentPlayer?.ready || false;
+            
+            // Check if opponent disconnected (other player not in players list or game status is finished)
+            const otherPlayer = state.players.find((p: PlayerStatus) => p.id !== this.currentPlayerId);
+            this.opponentDisconnected = !otherPlayer && state.status === 'finished';
+          }
+          // Check if game is finished to show rematch button
+          if (state.status === 'finished' && !this.isSpectator) {
+            this.showRematchButton = true;
+            // Update statistics
+            this.updateGameStats(state);
+            
+            // If opponent disconnected and game is finished, don't show rematch
+            if (this.opponentDisconnected) {
+              this.showRematchButton = false;
+            }
+            // Clear previous scores when game ends
+            this.previousScores.clear();
+          }
+          // Rematch countdown removed - no longer displaying countdown
+          this.drawGame();
+        } else {
+          // If game state is null and we're on a game page, check if we should redirect
+          // This handles page refresh when game doesn't exist or is finished
+          if (this.gameId && !this.isSpectator) {
+            // Wait a bit to see if state arrives, then redirect if still null
+            if (!this.gameStateTimeout) {
+              this.gameStateTimeout = setTimeout(() => {
+                if (!this.gameState) {
+                  console.log('Game state is null, redirecting to lobby...');
+                  this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
+                  setTimeout(() => {
+                    this.router.navigate(['/']);
+                  }, 1500);
+                }
+              }, 3000); // Increased timeout to 3 seconds
+            }
+          }
+        }
+      })
+    );
+
+    // Check if spectator mode
+    this.subscriptions.add(
+      this.gameService.isSpectator().subscribe(isSpec => {
+        this.isSpectator = isSpec;
       })
     );
 
@@ -138,19 +146,6 @@ export class GameComponent implements OnInit, OnDestroy {
         }
       })
     );
-
-    // If no game state yet, check if we already have one from game_accept message
-    // The state should be set when navigating to this route
-    // If no state after timeout, redirect to lobby (game might not exist or player disconnected)
-    this.gameStateTimeout = setTimeout(() => {
-      if (!this.gameState && this.gameId) {
-        console.log('No game state found after timeout, redirecting to lobby...');
-        this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
-        setTimeout(() => {
-          this.router.navigate(['/']);
-        }, 1500);
-      }
-    }, 2000); // Wait 2 seconds for game state
   }
 
   ngOnDestroy(): void {
