@@ -154,6 +154,7 @@ export class GameComponent implements OnInit, OnDestroy {
             this.previousScores.clear();
           }
           // Rematch countdown removed - no longer displaying countdown
+          console.log('Drawing game, status:', state.status, 'snakes:', state.snakes?.length);
           this.drawGame();
         } else {
           // If game state is null and we're on a game page, check if we should redirect
@@ -353,17 +354,23 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   drawGame(): void {
-    if (!this.gameState || !this.ctx) return;
+    if (!this.gameState || !this.ctx) {
+      console.warn('Cannot draw game: gameState or ctx is null', { gameState: !!this.gameState, ctx: !!this.ctx });
+      return;
+    }
 
+    // Clear canvas
     this.ctx.fillStyle = '#1a1a2e';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.drawGrid();
 
-    if (this.gameState.food) {
+    // Draw food
+    if (this.gameState.food && this.gameState.food.position) {
       this.drawFood(this.gameState.food.position);
     }
 
+    // Draw snakes
     let snakesToDraw = this.gameState.snakes;
     let usePlaceholder = false;
 
@@ -375,10 +382,14 @@ export class GameComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (snakesToDraw) {
+    if (snakesToDraw && snakesToDraw.length > 0) {
       snakesToDraw.forEach(snake => {
-        this.drawSnake(snake, usePlaceholder);
+        if (snake && snake.body && snake.body.length > 0) {
+          this.drawSnake(snake, usePlaceholder);
+        }
       });
+    } else if (this.gameState.status === 'playing') {
+      console.warn('Game is playing but no snakes to draw', { status: this.gameState.status, snakes: this.gameState.snakes });
     }
   }
 

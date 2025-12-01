@@ -294,6 +294,7 @@ export class GameService {
           }
           break;
         case 'game_update':
+          console.log('Received game_update:', message.data?.status, 'gameId:', message.data?.id);
           const previousState = this.currentGameState$.value;
           this.currentGameState$.next(message.data);
           // For single player games, navigate to game on first update (countdown starts)
