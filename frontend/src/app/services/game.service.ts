@@ -176,10 +176,10 @@ export class GameService {
             if (message.player.username) {
               localStorage.setItem('snake_game_username', message.player.username);
             }
-            // Backend automatically adds player to lobby, so we don't need to call joinLobby()
-            // But we can request games list
+            // Player is connected but not in lobby yet
+            // Frontend will show mode selection (single/multiplayer)
+            // joinLobby() will be called when multiplayer is selected
             this.connectionStatus$.next({ step: 'loading_lobby', completed: false });
-            this.listGames();
           }
           break;
         case 'lobby_status':
