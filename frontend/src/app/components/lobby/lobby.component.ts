@@ -236,6 +236,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
     return this.pendingRequests.some((req: any) => req.to_player?.id === playerId);
   }
 
+  hasGameRequestFrom(playerId: string): boolean {
+    return this.gameRequests.some((req: any) => req.from_player?.id === playerId);
+  }
+
   cancelGameRequest(targetId: string): void {
     this.gameService.cancelGameRequest(targetId);
   }

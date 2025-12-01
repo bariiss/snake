@@ -79,11 +79,12 @@
                 </div>
                 <div *ngIf="!isCurrentPlayer(player.id) && !player.in_game" class="player-actions">
                   <button
-                    *ngIf="!hasPendingRequestTo(player.id)"
+                    *ngIf="!hasPendingRequestTo(player.id) && !hasGameRequestFrom(player.id)"
                     class="btn-secondary btn-small"
                     (click)="sendGameRequest(player.id)"
+                    title="Send game request"
                   >
-                    Send Request
+                    Request
                   </button>
                   <div *ngIf="hasPendingRequestTo(player.id)" class="request-status">
                     <span class="status-text">Request sent</span>
@@ -94,6 +95,9 @@
                     >
                       ✕
                     </button>
+                  </div>
+                  <div *ngIf="hasGameRequestFrom(player.id)" class="request-status incoming">
+                    <span class="status-text">Request received</span>
                   </div>
                 </div>
               </div>
