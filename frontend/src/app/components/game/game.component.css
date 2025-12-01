@@ -723,12 +723,6 @@
   flex-wrap: wrap;
 }
 
-.btn-mode-selection {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: #fff;
-}
-
-
 .game-canvas {
   border: 2px solid #555;
   border-radius: 8px;
