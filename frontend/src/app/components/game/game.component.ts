@@ -450,8 +450,20 @@ export class GameComponent implements OnInit, OnDestroy {
     if (!this.gameState || !this.gameState.winner || this.gameState.winner === 'tie') {
       return '';
     }
-    const winnerSnake = this.gameState.snakes.find(s => s.id === this.gameState!.winner);
-    return winnerSnake?.username || `Player ${this.gameState.winner.substring(0, 8)}`;
+    // Find the snake with matching ID (case-sensitive match)
+    const winnerSnake = this.gameState.snakes?.find(s => s.id === this.gameState!.winner);
+    if (winnerSnake && winnerSnake.username) {
+      return winnerSnake.username;
+    }
+    // Fallback: try to find by player ID in players array
+    if (this.gameState.players) {
+      const winnerPlayer = this.gameState.players.find(p => p.id === this.gameState!.winner);
+      if (winnerPlayer && winnerPlayer.username) {
+        return winnerPlayer.username;
+      }
+    }
+    // Last resort: return player ID substring
+    return `Player ${this.gameState.winner.substring(0, 8)}`;
   }
   dismissBanner(): void {
     this.gameService.clearBanner();
