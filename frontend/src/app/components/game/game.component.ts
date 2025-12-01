@@ -62,6 +62,27 @@ export class GameComponent implements OnInit, OnDestroy {
       })
     );
 
+    // Helper function to redirect based on login status
+    const redirectBasedOnLoginStatus = (message: string) => {
+      this.gameService.getCurrentPlayer().subscribe(player => {
+        if (player) {
+          // User is logged in, redirect to mode selection
+          console.log('Redirecting to mode selection...');
+          this.gameService.showInfoBanner(message, 'info');
+          setTimeout(() => {
+            this.router.navigate(['/mode-selection']);
+          }, 1500);
+        } else {
+          // User is not logged in, redirect to login
+          console.log('Redirecting to login...');
+          this.gameService.showInfoBanner(message + ' Please login to continue.', 'info');
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 1500);
+        }
+      }).unsubscribe();
+    };
+
     // Subscribe to game state updates
     this.subscriptions.add(
       this.gameService.getCurrentGameState().subscribe(state => {
@@ -69,6 +90,13 @@ export class GameComponent implements OnInit, OnDestroy {
           // Check if this state belongs to the current game
           if (state.id && state.id !== this.gameId) {
             // Different game, ignore
+            return;
+          }
+          
+          // Check if game is finished - redirect if accessing finished game URL
+          if (state.status === 'finished' && state.id === this.gameId) {
+            // Game is finished, redirect based on login status
+            redirectBasedOnLoginStatus('This game has ended.');
             return;
           }
           
@@ -115,11 +143,8 @@ export class GameComponent implements OnInit, OnDestroy {
             if (!this.gameStateTimeout) {
               this.gameStateTimeout = setTimeout(() => {
                 if (!this.gameState) {
-                  console.log('Game state is null, redirecting to lobby...');
-                  this.gameService.showInfoBanner('Game not found or has ended. Returning to lobby...', 'warning');
-                  setTimeout(() => {
-                    this.router.navigate(['/']);
-                  }, 1500);
+                  console.log('Game state is null, checking login status...');
+                  redirectBasedOnLoginStatus('Game not found or has ended.');
                 }
               }, 3000); // Increased timeout to 3 seconds
             }
