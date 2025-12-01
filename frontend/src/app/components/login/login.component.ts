@@ -27,12 +27,27 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Check if token exists and is valid
     const token = localStorage.getItem('snake_game_token');
+    const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
+    
     if (token) {
       // Try to connect with token
+      this.isConnecting = true;
       this.connectWithToken(token);
+      
+      // Set timeout - if connection doesn't succeed within 5 seconds, clear token and show login form
+      setTimeout(() => {
+        if (this.isConnecting) {
+          // Still connecting after timeout, clear token and allow manual login
+          localStorage.removeItem('snake_game_token');
+          this.isConnecting = false;
+          this.errorMessage = 'Connection timeout. Please login again.';
+          if (savedUsername) {
+            this.username = savedUsername;
+          }
+        }
+      }, 5000);
     } else {
       // Load saved username if exists
-      const savedUsername = localStorage.getItem(this.USERNAME_STORAGE_KEY);
       if (savedUsername) {
         this.username = savedUsername;
       }
@@ -45,9 +60,12 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.errorMessage = error;
           this.isConnecting = false;
           // If error occurs with token, clear token and allow manual login
-          if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN')) {
+          if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN') || error.includes('PLAYER_NOT_FOUND')) {
             localStorage.removeItem('snake_game_token');
             this.errorMessage = 'Session expired. Please login again.';
+            if (savedUsername) {
+              this.username = savedUsername;
+            }
           }
           this.gameService.clearConnectionError();
         }
@@ -57,11 +75,14 @@ export class LoginComponent implements OnInit, OnDestroy {
     // Listen for error messages from WebSocket
     this.subscriptions.add(
       this.gameService.getBanner().subscribe(banner => {
-        if (banner && banner.type === 'warning' && banner.message.includes('Player not found')) {
+        if (banner && banner.type === 'warning' && (banner.message.includes('Player not found') || banner.message.includes('Invalid token'))) {
           // Token is invalid, clear it
           localStorage.removeItem('snake_game_token');
           this.isConnecting = false;
           this.errorMessage = 'Session expired. Please login again.';
+          if (savedUsername) {
+            this.username = savedUsername;
+          }
         }
       })
     );
@@ -69,7 +90,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     // Listen for successful connection
     this.subscriptions.add(
       this.gameService.getCurrentPlayer().subscribe(player => {
-        if (player) {
+        if (player && this.isConnecting) {
           // Connected successfully, navigate to mode selection
           this.isConnecting = false;
           setTimeout(() => {

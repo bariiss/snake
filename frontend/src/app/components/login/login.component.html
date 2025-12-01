@@ -1,33 +1,40 @@
 <div class="login-container">
   <div class="login-card">
     <h1>🐍 Slither Arena</h1>
-    <p class="login-subtitle">Enter your nickname to join the arena</p>
+    <p class="login-subtitle" *ngIf="!isConnecting">Enter your nickname to join the arena</p>
+    <p class="login-subtitle" *ngIf="isConnecting">Connecting...</p>
     
     <div *ngIf="errorMessage" class="error-message">
       <p>{{ errorMessage }}</p>
-      <p class="error-hint">Please choose a different nickname.</p>
+      <p class="error-hint" *ngIf="errorMessage.includes('nickname') || errorMessage.includes('already in use')">Please choose a different nickname.</p>
     </div>
     
-    <div class="input-group">
-      <span class="input-icon">👤</span>
-      <input
-        type="text"
-        [(ngModel)]="username"
-        placeholder="Nickname"
-        (keyup.enter)="connect()"
-        [disabled]="isConnecting"
-      />
+    <div *ngIf="isConnecting" class="connecting-state">
+      <div class="loading-spinner"></div>
+      <p>Establishing connection...</p>
     </div>
     
-    <div class="button-container">
-      <button 
-        class="btn-primary" 
-        (click)="connect()"
-        [disabled]="isConnecting || !username.trim()"
-      >
-        <span *ngIf="!isConnecting">Connect</span>
-        <span *ngIf="isConnecting">Connecting...</span>
-      </button>
+    <div *ngIf="!isConnecting">
+      <div class="input-group">
+        <span class="input-icon">👤</span>
+        <input
+          type="text"
+          [(ngModel)]="username"
+          placeholder="Nickname"
+          (keyup.enter)="connect()"
+          [disabled]="isConnecting"
+        />
+      </div>
+      
+      <div class="button-container">
+        <button 
+          class="btn-primary" 
+          (click)="connect()"
+          [disabled]="isConnecting || !username.trim()"
+        >
+          Connect
+        </button>
+      </div>
     </div>
   </div>
 </div>
