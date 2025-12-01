@@ -727,6 +727,27 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.requests-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.requests-list::-webkit-scrollbar-track {
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 3px;
+}
+
+.requests-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 193, 7, 0.3);
+  border-radius: 3px;
+}
+
+.requests-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 193, 7, 0.5);
 }
 
 .request-item {
@@ -829,6 +850,27 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pending-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pending-list::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-radius: 3px;
+}
+
+.pending-list::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 3px;
+}
+
+.pending-list::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
 }
 
 .pending-item {
@@ -1039,6 +1081,27 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.games-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.games-list::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-radius: 3px;
+}
+
+.games-list::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 3px;
+}
+
+.games-list::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
 }
 
 .game-item {
