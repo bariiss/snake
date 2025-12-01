@@ -43,7 +43,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.connectionTimeout = setTimeout(() => {
         if (this.isConnecting) {
           // Still connecting after timeout, clear token and allow manual login
-          // Disconnect any ongoing connection attempts
+          // Disconnect any ongoing connection attempts (this will stop reconnects)
           this.gameService.disconnect();
           localStorage.removeItem('snake_game_token');
           localStorage.removeItem('snake_game_access_token');
@@ -96,6 +96,10 @@ export class LoginComponent implements OnInit, OnDestroy {
           if (error.includes('Player not found') || error.includes('Invalid token') || error.includes('INVALID_TOKEN') || error.includes('PLAYER_NOT_FOUND')) {
             const currentToken = localStorage.getItem('snake_game_token');
             const accessToken = localStorage.getItem('snake_game_access_token');
+            
+            // Stop any reconnection attempts first
+            this.gameService.disconnect();
+            
             if (accessToken && accessToken !== currentToken) {
               // Try to reconnect with access token (only once)
               this.isConnecting = true;
@@ -126,6 +130,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         if (banner && banner.type === 'warning' && (banner.message.includes('Player not found') || banner.message.includes('Invalid token'))) {
           // Token is invalid, try access token first
           const accessToken = localStorage.getItem('snake_game_access_token');
+          
+          // Stop any reconnection attempts first
+          this.gameService.disconnect();
+          
           if (accessToken && accessToken !== token) {
             // Try to reconnect with access token
             this.isConnecting = true;

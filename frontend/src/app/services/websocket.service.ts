@@ -87,12 +87,24 @@ export class WebSocketService {
 
       this.ws.onclose = (event) => {
         console.log('WebSocket closed', event.code, event.reason);
+        // Only attempt reconnect if:
+        // 1. shouldReconnect is true (not manually disconnected)
+        // 2. We haven't exceeded max attempts
+        // 3. We have a token or username (don't reconnect with invalid tokens)
         if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          setTimeout(() => {
-            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            this.setupConnection(username);
-          }, this.reconnectDelay);
+          const hasToken = this.token || localStorage.getItem('snake_game_token');
+          if (hasToken || username) {
+            this.reconnectAttempts++;
+            setTimeout(() => {
+              // Check again before reconnecting (token might have been cleared)
+              if (this.shouldReconnect && (this.token || localStorage.getItem('snake_game_token') || username)) {
+                console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+                this.setupConnection(username);
+              }
+            }, this.reconnectDelay);
+          } else {
+            console.log('No token or username available, not reconnecting');
+          }
         }
       };
     } catch (error) {
@@ -113,16 +125,26 @@ export class WebSocketService {
 
   disconnect(): void {
     this.shouldReconnect = false;
+    this.reconnectAttempts = this.maxReconnectAttempts; // Prevent any pending reconnects
+    
     if (this.ws) {
       // Close WebSocket connection properly
       try {
+        // Remove event handlers to prevent errors during close
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        
         if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
           this.ws.close(1000, 'Normal closure');
         }
       } catch (error) {
-        console.warn('Error closing WebSocket:', error);
+        // Ignore errors during disconnect - connection might already be closed
+        console.warn('Error closing WebSocket (ignored):', error);
+      } finally {
+        this.ws = null;
       }
-      this.ws = null;
     }
     this.playerId = null;
     this.token = null;

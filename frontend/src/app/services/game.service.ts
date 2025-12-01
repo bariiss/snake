@@ -636,16 +636,24 @@ export class GameService {
     this.connectionStatus$.next({ step: 'disconnecting_peer', completed: false });
     
     // Disconnect peer-to-peer first
-    this.webrtcService.disconnectPeer();
+    try {
+      this.webrtcService.disconnectPeer();
+    } catch (error) {
+      console.warn('Error disconnecting WebRTC (ignored):', error);
+    }
     
     setTimeout(() => {
       this.connectionStatus$.next({ step: 'disconnecting_peer', completed: true });
       this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
       
-      // Only leave lobby if we're actually in the lobby (check if we have lobby players)
+      // Only leave lobby if we're actually in the lobby and WebSocket is connected
       const hasLobbyPlayers = this.lobbyPlayers$.value && this.lobbyPlayers$.value.length > 0;
-      if (hasLobbyPlayers) {
-        this.leaveLobby();
+      if (hasLobbyPlayers && this.wsService.isConnected()) {
+        try {
+          this.leaveLobby();
+        } catch (error) {
+          console.warn('Error leaving lobby (ignored):', error);
+        }
       }
       
       setTimeout(() => {
@@ -653,7 +661,11 @@ export class GameService {
         this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: false });
         
         // Disconnect WebSocket after leaving lobby
-        this.wsService.disconnect();
+        try {
+          this.wsService.disconnect();
+        } catch (error) {
+          console.warn('Error disconnecting WebSocket (ignored):', error);
+        }
         
         setTimeout(() => {
           this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: true });
