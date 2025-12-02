@@ -27,11 +27,6 @@ export class ModeSelectionComponent implements OnInit, OnDestroy {
       // Token exists - try to connect with it
       console.log('Mode selection: Token found, attempting to connect...');
       this.gameService.connectWithToken(token);
-      
-      // Wait a bit for connection to establish, then check
-      setTimeout(() => {
-        this.checkConnection();
-      }, 2000);
     } else {
       // No token - redirect to login immediately
       this.router.navigate(['/login']);
@@ -43,6 +38,24 @@ export class ModeSelectionComponent implements OnInit, OnDestroy {
       this.gameService.getCurrentPlayer().subscribe(player => {
         if (player) {
           this.isConnected = true;
+        } else {
+          // Player is null - check connection status after a delay
+          setTimeout(() => {
+            this.checkConnectionStatus();
+          }, 3000);
+        }
+      })
+    );
+
+    // Listen for connection errors
+    this.subscriptions.add(
+      this.gameService.getConnectionError().subscribe(error => {
+        if (error && (error.includes('INVALID_TOKEN') || error.includes('PLAYER_NOT_FOUND'))) {
+          // Token is invalid - clear and redirect
+          console.log('Mode selection: Invalid token, clearing and redirecting');
+          localStorage.removeItem('snake_game_token');
+          localStorage.removeItem('snake_game_access_token');
+          this.router.navigate(['/login']);
         }
       })
     );
@@ -68,50 +81,29 @@ export class ModeSelectionComponent implements OnInit, OnDestroy {
     );
   }
 
-  private checkConnection(): void {
-    // Check connection status first
-    this.subscriptions.add(
-      this.gameService.getConnectionStatus().subscribe(status => {
-        // If we're still connecting, wait a bit more
-        if (status.step === 'connecting' && !status.completed) {
-          setTimeout(() => {
-            this.verifyConnection();
-          }, 3000);
-          return;
-        }
-        
-        // Check if we have a player
-        this.verifyConnection();
-      })
-    );
-  }
-
-  private verifyConnection(): void {
-    this.gameService.getCurrentPlayer().subscribe(player => {
-      if (player) {
-        this.isConnected = true;
-        // Connected successfully, stay on mode selection page
+  private checkConnectionStatus(): void {
+    // Check if we're still connecting or if connection failed
+    this.gameService.getConnectionStatus().subscribe(status => {
+      // If we're still connecting, wait a bit more
+      if (status.step === 'connecting' && !status.completed) {
+        setTimeout(() => {
+          this.checkConnectionStatus();
+        }, 2000);
         return;
       }
 
-      // Not connected - check if we're still trying to connect
-      this.gameService.getConnectionStatus().subscribe(status => {
-        if (status.step === 'connecting' && !status.completed) {
-          // Still connecting, wait a bit more
-          setTimeout(() => {
-            this.verifyConnection();
-          }, 2000);
-          return;
+      // Not connecting - check if we have a player
+      this.gameService.getCurrentPlayer().subscribe(player => {
+        if (!player) {
+          // No player and not connecting - token might be invalid
+          const token = localStorage.getItem('snake_game_token');
+          if (token) {
+            console.log('Mode selection: Connection failed after timeout, clearing tokens');
+            localStorage.removeItem('snake_game_token');
+            localStorage.removeItem('snake_game_access_token');
+          }
+          this.router.navigate(['/login']);
         }
-
-        // Not connecting or connection failed - clear tokens and redirect
-        const token = localStorage.getItem('snake_game_token');
-        if (token) {
-          console.log('Mode selection: Connection failed, clearing tokens');
-          localStorage.removeItem('snake_game_token');
-          localStorage.removeItem('snake_game_access_token');
-        }
-        this.router.navigate(['/login']);
       }).unsubscribe();
     }).unsubscribe();
   }
