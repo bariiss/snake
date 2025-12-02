@@ -650,9 +650,14 @@ export class GameService {
       this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: false });
       
       // Only leave lobby if we're actually in the lobby and WebSocket is connected
+      // For single player games, we might not be in lobby, so check WebSocket connection
       const hasLobbyPlayers = this.lobbyPlayers$.value && this.lobbyPlayers$.value.length > 0;
-      if (hasLobbyPlayers && this.wsService.isConnected()) {
+      const isInGame = this.currentGameState$.value !== null;
+      
+      // Leave lobby if we're in lobby, or if we're in a game (to clean up backend state)
+      if (this.wsService.isConnected() && (hasLobbyPlayers || isInGame)) {
         try {
+          // For single player games, we might not be in lobby, but still send leave_lobby to clean up
           this.leaveLobby();
         } catch (error) {
           console.warn('Error leaving lobby (ignored):', error);
@@ -662,6 +667,9 @@ export class GameService {
       setTimeout(() => {
         this.connectionStatus$.next({ step: 'disconnecting_lobby', completed: true });
         this.connectionStatus$.next({ step: 'disconnecting_websocket', completed: false });
+        
+        // Clear game state before disconnecting WebSocket
+        this.currentGameState$.next(null);
         
         // Disconnect WebSocket after leaving lobby
         try {

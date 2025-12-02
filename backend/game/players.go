@@ -25,6 +25,7 @@ func (gm *Manager) RemovePlayer(playerID string) {
 		game.Mutex.Lock()
 		if game.Player1.ID == playerID || (game.Player2 != nil && game.Player2.ID == playerID) {
 			isActive := game.IsActive
+			isSinglePlayer := game.IsSinglePlayer
 			var disconnectedPlayer, otherPlayer *models.Player
 			if game.Player1.ID == playerID {
 				disconnectedPlayer = game.Player1
@@ -37,12 +38,18 @@ func (gm *Manager) RemovePlayer(playerID string) {
 				// Clear disconnected player's Send channel to mark as inactive
 				game.Player2.Send = nil
 			}
+			// Stop game ticker if game is active (for both single and multiplayer)
+			if isActive && game.Ticker != nil {
+				game.Ticker.Stop()
+				game.Ticker = nil
+				game.IsActive = false
+			}
 			game.Mutex.Unlock()
 			if isActive {
 				gm.endGame(game, "disconnect", game.State)
 			}
 			// Only send disconnect message if it's a multiplayer game
-			if otherPlayer != nil && disconnectedPlayer != nil && !game.IsSinglePlayer {
+			if otherPlayer != nil && disconnectedPlayer != nil && !isSinglePlayer {
 				if isActive {
 					gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
 						"game_id": gameID,
