@@ -85,7 +85,7 @@ export class WebSocketService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected, readyState:', this.ws?.readyState);
         this.reconnectAttempts = 0;
       };
 

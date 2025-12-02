@@ -197,7 +197,8 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Don't add player to lobby automatically - wait for join_lobby message
 	// This allows frontend to show mode selection first
 
-	// Send connected message with token
+	// Send connected message with token directly via WebSocket (before writePump starts)
+	// This ensures the message is sent immediately after connection is established
 	connectedMsg := map[string]interface{}{
 		"type": "connected",
 		"player": map[string]interface{}{
@@ -207,10 +208,13 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 	}
 	jsonData, _ := json.Marshal(connectedMsg)
-	select {
-	case player.Send <- jsonData:
-	default:
-		log.Printf("Failed to send connected message to player %s", player.Username)
+
+	// Send directly via WebSocket connection to ensure it's sent immediately
+	conn.SetWriteDeadline(time.Now().Add(writeWait))
+	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+		log.Printf("Failed to send connected message to player %s: %v", player.Username, err)
+		conn.Close()
+		return
 	}
 
 	// Start goroutines for reading and writing

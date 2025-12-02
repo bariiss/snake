@@ -169,6 +169,7 @@ export class GameService {
     this.wsService.messages$.subscribe(message => {
       switch (message.type) {
         case 'connected':
+          console.log('Received connected message:', message.player?.username, 'token:', message.token ? 'present' : 'missing');
           this.connectionStatus$.next({ step: 'connected', completed: true });
           if (message.player) {
             this.currentPlayer$.next(message.player);
@@ -191,6 +192,8 @@ export class GameService {
             // joinLobby() will be called when multiplayer is selected
             // Set to ready immediately so loading screen closes and mode selection shows
             this.connectionStatus$.next({ step: 'ready', completed: true });
+          } else {
+            console.warn('Connected message received but no player data');
           }
           break;
         case 'lobby_status':
