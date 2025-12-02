@@ -218,12 +218,20 @@ func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[s
 
 	// Try WebSocket first (for lobby/matchmaking)
 	if player.Send != nil {
-		select {
-		case player.Send <- jsonData:
-			return
-		default:
-			log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
-		}
+		// Use recover to handle case where channel is closed
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Failed to send WebSocket message to player %s (%s) - channel closed: %v", player.ID, player.Username, r)
+				}
+			}()
+			select {
+			case player.Send <- jsonData:
+				return
+			default:
+				log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
+			}
+		}()
 	}
 
 	// Fallback to WebRTC (if available)

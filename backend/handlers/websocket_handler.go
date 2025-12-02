@@ -115,7 +115,15 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if player.Send != nil {
 			log.Printf("Player %s already has active connection, closing old connection", player.ID)
 			// Close old channel to signal old connection to stop
-			close(player.Send)
+			// Use recover to handle case where channel is already closed
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("Channel already closed for player %s (ignored): %v", player.ID, r)
+					}
+				}()
+				close(player.Send)
+			}()
 			// Don't call RemovePlayer here - we want to keep the player for the new connection
 			// Just wait a bit for the old connection to clean up
 			time.Sleep(100 * time.Millisecond)
@@ -146,7 +154,15 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if existingPlayer != nil && existingPlayer.Send != nil {
 			// Same username is already connected - close old connection
 			log.Printf("Username %s already connected, closing old connection (old ID: %s)", username, existingPlayer.ID)
-			close(existingPlayer.Send)
+			// Use recover to handle case where channel is already closed
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("Channel already closed for player %s (ignored): %v", existingPlayer.ID, r)
+					}
+				}()
+				close(existingPlayer.Send)
+			}()
 			existingPlayer.Send = nil
 			h.gameManager.RemovePlayer(existingPlayer.ID)
 			time.Sleep(50 * time.Millisecond)

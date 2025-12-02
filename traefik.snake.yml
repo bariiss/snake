@@ -8,6 +8,8 @@ http:
       service: snake-backend-service
       tls:
         certResolver: cloudflare
+      middlewares:
+        - websocket-headers
 
     # Backend router for WebRTC peer signaling
     snake-backend-webrtc-router:
@@ -17,8 +19,10 @@ http:
       service: snake-backend-service
       tls:
         certResolver: cloudflare
+      middlewares:
+        - cors-headers
 
-    # Frontend router
+    # Frontend router (must be last, lowest priority)
     snake-frontend-router:
       rule: "Host(`snake.li1.nl`)"
       entryPoints:
@@ -26,7 +30,29 @@ http:
       service: snake-frontend-service
       tls:
         certResolver: cloudflare
-      priority: 1  # Lower priority, so it matches last
+      priority: 1
+
+  middlewares:
+    # WebSocket headers middleware
+    websocket-headers:
+      headers:
+        customRequestHeaders:
+          Upgrade: "websocket"
+          Connection: "Upgrade"
+
+    # CORS headers for WebRTC endpoints
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+        accessControlAllowOrigin: "*"
+        accessControlMaxAge: 3600
+        addVaryHeader: true
 
   services:
     snake-frontend-service:

@@ -159,7 +159,7 @@ func (m *Manager) SendMessage(playerID string, messageType string, data interfac
 	return peer.DataChannel.Send(jsonData)
 }
 
-func (m *Manager) BroadcastToGame(player1ID, player2ID string, messageType string, data interface{}) {
+func (m *Manager) BroadcastToGame(player1ID, player2ID string, messageType string, data any) {
 	m.SendMessage(player1ID, messageType, data)
 	m.SendMessage(player2ID, messageType, data)
 }
