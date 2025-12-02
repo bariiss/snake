@@ -46,24 +46,7 @@ export class WebRTCService {
   private async setupPeerConnection(username: string, token: string): Promise<void> {
     try {
       // Create peer connection with STUN and TURN servers
-      const configuration: RTCConfiguration = {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          // TURN server with TLS
-          {
-            urls: 'turns:turn.li1.nl:5349',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          },
-          // TURN server without TLS (fallback)
-          {
-            urls: 'turn:turn.li1.nl:3478',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          }
-        ]
-      };
+      const configuration = this.getICEConfiguration();
 
       this.peerConnection = new RTCPeerConnection(configuration);
 
@@ -231,27 +214,7 @@ export class WebRTCService {
   // Peer-to-peer methods
   async connectToPeer(peerPlayerId: string, isInitiator: boolean): Promise<void> {
     try {
-      const configuration: RTCConfiguration = {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          // TURN server with TLS
-          {
-            urls: 'turns:turn.li1.nl:5349',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          },
-          // TURN server without TLS (fallback)
-          {
-            urls: 'turn:turn.li1.nl:3478',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          }
-        ]
-      };
+      const configuration = this.getICEConfiguration();
 
       this.peerToPeerConnection = new RTCPeerConnection(configuration);
       this.peerPlayerId = peerPlayerId;
@@ -321,27 +284,7 @@ export class WebRTCService {
     if (!this.peerToPeerConnection) {
       // Initialize peer-to-peer connection if not already done
       // This happens when we receive an offer before we initiate
-      const configuration: RTCConfiguration = {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          // TURN server with TLS
-          {
-            urls: 'turns:turn.li1.nl:5349',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          },
-          // TURN server without TLS (fallback)
-          {
-            urls: 'turn:turn.li1.nl:3478',
-            username: 'peaceast',
-            credential: 'endoplazmikretikulum'
-          }
-        ]
-      };
+      const configuration = this.getICEConfiguration();
 
       this.peerToPeerConnection = new RTCPeerConnection(configuration);
       this.peerPlayerId = offer.from_player_id;
@@ -596,6 +539,36 @@ export class WebRTCService {
     
     // Default: Use port 8020 (backend port)
     return `${protocol}//${host}:8020`;
+  }
+
+  /**
+   * Returns the ICE server configuration with STUN and TURN servers
+   * This configuration is used for all WebRTC peer connections
+   * TURN server: turn.li1.nl (TLS: 5349, non-TLS: 3478)
+   */
+  private getICEConfiguration(): RTCConfiguration {
+    return {
+      iceServers: [
+        // STUN servers
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        // TURN server with TLS (primary) - turn.li1.nl:5349
+        {
+          urls: 'turns:turn.li1.nl:5349',
+          username: 'peaceast',
+          credential: 'endoplazmikretikulum'
+        },
+        // TURN server without TLS (fallback) - turn.li1.nl:3478
+        {
+          urls: 'turn:turn.li1.nl:3478',
+          username: 'peaceast',
+          credential: 'endoplazmikretikulum'
+        }
+      ]
+    };
   }
 }
 

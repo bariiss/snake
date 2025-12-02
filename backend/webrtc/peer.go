@@ -29,26 +29,7 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) CreatePeerConnection(player *models.Player) (*PeerConnection, error) {
-	config := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun1.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun2.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun3.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun4.l.google.com:19302"},
-			},
-		},
-		ICETransportPolicy: webrtc.ICETransportPolicyAll,
-	}
+	config := m.getICEConfiguration()
 
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
@@ -162,4 +143,41 @@ func (m *Manager) SendMessage(playerID string, messageType string, data interfac
 func (m *Manager) BroadcastToGame(player1ID, player2ID string, messageType string, data any) {
 	m.SendMessage(player1ID, messageType, data)
 	m.SendMessage(player2ID, messageType, data)
+}
+
+// getICEConfiguration returns the ICE server configuration with STUN and TURN servers
+func (m *Manager) getICEConfiguration() webrtc.Configuration {
+	return webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			// STUN servers
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun1.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun2.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun3.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun4.l.google.com:19302"},
+			},
+			// TURN server with TLS (primary)
+			{
+				URLs:       []string{"turns:turn.li1.nl:5349"},
+				Username:   "peaceast",
+				Credential: "endoplazmikretikulum",
+			},
+			// TURN server without TLS (fallback)
+			{
+				URLs:       []string{"turn:turn.li1.nl:3478"},
+				Username:   "peaceast",
+				Credential: "endoplazmikretikulum",
+			},
+		},
+		ICETransportPolicy: webrtc.ICETransportPolicyAll,
+	}
 }
