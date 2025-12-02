@@ -35,27 +35,45 @@ export class WebSocketService {
       
       // Remove event handlers to prevent errors
       try {
-        this.ws.onopen = null;
-        this.ws.onmessage = null;
-        this.ws.onerror = null;
-        this.ws.onclose = null;
+        const oldWs = this.ws;
+        const oldReadyState = oldWs.readyState;
         
-        // Close the connection if it's still open
-        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-          this.ws.close(1000, 'Reconnecting');
+        // Clear all handlers
+        oldWs.onopen = null;
+        oldWs.onmessage = null;
+        oldWs.onerror = null;
+        
+        // Set onclose handler to clear ws reference when closed
+        oldWs.onclose = () => {
+          console.log('Old WebSocket connection closed');
+        };
+        
+        // Close the connection if it's still open or connecting
+        if (oldReadyState === WebSocket.OPEN || oldReadyState === WebSocket.CONNECTING) {
+          try {
+            oldWs.close(1000, 'Reconnecting');
+          } catch (closeError) {
+            console.warn('Error closing old WebSocket (ignored):', closeError);
+          }
         }
       } catch (error) {
         // Ignore errors during cleanup
         console.warn('Error cleaning up old WebSocket connection (ignored):', error);
       }
       
+      // Clear reference immediately
       this.ws = null;
     }
     
+    // Setup new connection immediately (old connection cleanup is done)
+    this.setupNewConnection(username, finalToken);
+  }
+
+  private setupNewConnection(username: string, token: string | null): void {
     // Reset state for new connection
     this.shouldReconnect = true;
     this.reconnectAttempts = 0;
-    this.token = finalToken;
+    this.token = token;
     this.setupConnection(username);
   }
 
