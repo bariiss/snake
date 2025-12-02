@@ -149,31 +149,16 @@ func (m *Manager) BroadcastToGame(player1ID, player2ID string, messageType strin
 func (m *Manager) getICEConfiguration() webrtc.Configuration {
 	return webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
-			// STUN servers
+			// STUN server
 			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
+				URLs: []string{"stun:turn.li1.nl:3478"},
 			},
+			// TURN server (non-TLS) - turn.li1.nl:3478 with UDP and TCP transports
 			{
-				URLs: []string{"stun:stun1.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun2.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun3.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun4.l.google.com:19302"},
-			},
-			// TURN server with TLS (primary)
-			{
-				URLs:       []string{"turns:turn.li1.nl:5349"},
-				Username:   "peaceast",
-				Credential: "endoplazmikretikulum",
-			},
-			// TURN server without TLS (fallback)
-			{
-				URLs:       []string{"turn:turn.li1.nl:3478"},
+				URLs: []string{
+					"turn:turn.li1.nl:3478?transport=udp",
+					"turn:turn.li1.nl:3478?transport=tcp",
+				},
 				Username:   "peaceast",
 				Credential: "endoplazmikretikulum",
 			},

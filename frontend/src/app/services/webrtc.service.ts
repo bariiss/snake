@@ -544,26 +544,19 @@ export class WebRTCService {
   /**
    * Returns the ICE server configuration with STUN and TURN servers
    * This configuration is used for all WebRTC peer connections
-   * TURN server: turn.li1.nl (TLS: 5349, non-TLS: 3478)
+   * TURN server: turn.li1.nl:3478 (non-TLS only)
    */
   private getICEConfiguration(): RTCConfiguration {
     return {
       iceServers: [
-        // STUN servers
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
-        // TURN server with TLS (primary) - turn.li1.nl:5349
+        // STUN server
+        { urls: 'stun:turn.li1.nl:3478' },
+        // TURN server (non-TLS) - turn.li1.nl:3478 with UDP and TCP transports
         {
-          urls: 'turns:turn.li1.nl:5349',
-          username: 'peaceast',
-          credential: 'endoplazmikretikulum'
-        },
-        // TURN server without TLS (fallback) - turn.li1.nl:3478
-        {
-          urls: 'turn:turn.li1.nl:3478',
+          urls: [
+            'turn:turn.li1.nl:3478?transport=udp',
+            'turn:turn.li1.nl:3478?transport=tcp'
+          ],
           username: 'peaceast',
           credential: 'endoplazmikretikulum'
         }
