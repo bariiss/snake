@@ -44,6 +44,8 @@ services:
       - "--min-port=49152"
       - "--max-port=65535"
       - "--fingerprint"
+      - "--no-tcp6"
+      - "--no-udp6"
       # - "--no-stdout-log"
       - "--verbose"
 
