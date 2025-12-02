@@ -109,13 +109,15 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		token = tokenString
 
-		// If player already has an active connection, close it
+		// If player already has an active connection, close it but DON'T remove player
+		// This allows the new connection to use the same player object
 		if player.Send != nil {
 			log.Printf("Player %s already has active connection, closing old connection", player.ID)
+			// Close old channel to signal old connection to stop
 			close(player.Send)
-			player.Send = nil
-			h.gameManager.RemovePlayer(player.ID)
-			time.Sleep(50 * time.Millisecond)
+			// Don't call RemovePlayer here - we want to keep the player for the new connection
+			// Just wait a bit for the old connection to clean up
+			time.Sleep(100 * time.Millisecond)
 		}
 
 		// Recreate Send channel for new connection
@@ -224,7 +226,14 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *WebSocketHandler) readPump(player *models.Player, conn *websocket.Conn) {
 	defer func() {
-		h.gameManager.RemovePlayer(player.ID)
+		// Only remove player if Send channel is nil (no new connection established)
+		// If Send channel is still active, a new connection is being established
+		// and we should not remove the player
+		if player.Send == nil {
+			h.gameManager.RemovePlayer(player.ID)
+		} else {
+			log.Printf("Player %s (%s) has new connection, not removing from manager", player.ID, player.Username)
+		}
 		conn.Close()
 	}()
 
