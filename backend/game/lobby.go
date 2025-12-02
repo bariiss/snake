@@ -171,9 +171,13 @@ func (gm *Manager) BroadcastLobbyStatus() {
 	playersInGame := make(map[string]bool)
 	for _, game := range gm.Games {
 		game.Mutex.RLock()
-		if game.State.Status != "finished" {
-			playersInGame[game.Player1.ID] = true
-			playersInGame[game.Player2.ID] = true
+		if game.State != nil && game.State.Status != "finished" {
+			if game.Player1 != nil {
+				playersInGame[game.Player1.ID] = true
+			}
+			if game.Player2 != nil {
+				playersInGame[game.Player2.ID] = true
+			}
 		}
 		game.Mutex.RUnlock()
 	}
