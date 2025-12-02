@@ -92,19 +92,20 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Find player by ID from token
 		player = h.gameManager.FindPlayerByID(claims.PlayerID)
 		if player == nil {
-			log.Printf("Player not found for token: %s", claims.PlayerID)
-			conn, _ := upgrader.Upgrade(w, r, nil)
-			if conn != nil {
-				errorMsg := map[string]interface{}{
-					"type":    "error",
-					"code":    "PLAYER_NOT_FOUND",
-					"message": "Player not found",
-				}
-				jsonError, _ := json.Marshal(errorMsg)
-				conn.WriteMessage(websocket.TextMessage, jsonError)
-				conn.Close()
+			// Player not found - create new player from token claims
+			// This can happen if server restarted or player was removed
+			log.Printf("Player not found for token, creating new player: %s (username: %s)", claims.PlayerID, claims.Username)
+			player = &models.Player{
+				ID:       claims.PlayerID,
+				Username: claims.Username,
+				Send:     make(chan []byte, 256),
+				JoinedAt: time.Now(),
 			}
-			return
+
+			// Register player in global registry
+			h.gameManager.Mutex.Lock()
+			h.gameManager.Players[player.ID] = player
+			h.gameManager.Mutex.Unlock()
 		}
 
 		token = tokenString
