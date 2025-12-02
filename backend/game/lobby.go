@@ -60,6 +60,14 @@ func (gm *Manager) FindPlayerByID(playerID string) *models.Player {
 		return nil
 	}
 
+	// First check global player registry
+	gm.Mutex.RLock()
+	if player, exists := gm.Players[playerID]; exists {
+		gm.Mutex.RUnlock()
+		return player
+	}
+	gm.Mutex.RUnlock()
+
 	// Check lobby
 	for _, p := range gm.Lobby.Snapshot() {
 		if p.ID == playerID {

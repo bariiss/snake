@@ -176,6 +176,11 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			JoinedAt: time.Now(),
 		}
 
+		// Register player in global registry
+		h.gameManager.Mutex.Lock()
+		h.gameManager.Players[player.ID] = player
+		h.gameManager.Mutex.Unlock()
+
 		// Generate token for new player
 		var err error
 		token, err = auth.GenerateToken(player.ID, player.Username)

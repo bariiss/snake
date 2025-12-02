@@ -14,6 +14,9 @@ func (gm *Manager) RemovePlayer(playerID string) {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
+	// Remove from global player registry
+	delete(gm.Players, playerID)
+
 	for i, p := range gm.MatchQueue {
 		if p.ID == playerID {
 			gm.MatchQueue = append(gm.MatchQueue[:i], gm.MatchQueue[i+1:]...)

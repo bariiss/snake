@@ -13,6 +13,7 @@ type Manager struct {
 	Games               map[string]*models.Game
 	PendingRequests     map[string]map[string]*models.Game
 	MatchQueue          []*models.Player
+	Players             map[string]*models.Player // Global player registry
 	Mutex               sync.RWMutex
 	WebRTCManager       *webrtcManager.Manager
 	MultiplayerManager  *MultiplayerGameManager
@@ -29,6 +30,7 @@ func NewGameManager() *Manager {
 		Games:           make(map[string]*models.Game),
 		PendingRequests: make(map[string]map[string]*models.Game),
 		MatchQueue:      make([]*models.Player, 0),
+		Players:         make(map[string]*models.Player),
 	}
 
 	// Initialize game mode managers
