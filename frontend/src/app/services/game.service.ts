@@ -326,6 +326,12 @@ export class GameService {
             const isSinglePlayer = message.data.is_single_player || !message.data.player2;
             const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
             console.log('Game started, navigating to:', gamePath, 'isSinglePlayer:', isSinglePlayer);
+            
+            // Start WebRTC peer-to-peer connection for multiplayer games
+            if (!isSinglePlayer && message.data) {
+              this.startPeerToPeerConnection(message);
+            }
+            
             if (this.router.url !== gamePath) {
               if (isSinglePlayer) {
                 this.router.navigate(['/game/single', message.data.id]);
