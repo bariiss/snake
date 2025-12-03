@@ -63,6 +63,7 @@ export class GameService {
   private banner$ = new BehaviorSubject<{ type: 'info' | 'warning'; message: string } | null>(null);
   private connectionError$ = new BehaviorSubject<string | null>(null);
   private connectionStatus$ = new BehaviorSubject<{ step: string; completed: boolean }>({ step: 'idle', completed: false });
+  private connectionTimeout: any = null;
 
   constructor(
     private wsService: WebSocketService,
@@ -71,6 +72,29 @@ export class GameService {
   ) {
     this.setupMessageHandlers();
     this.setupPeerToPeerMessageHandlers();
+    this.setupConnectionStateListener();
+  }
+
+  private setupConnectionStateListener(): void {
+    // Listen to WebSocket connection state changes
+    this.wsService.connectionState$.subscribe(state => {
+      if (state === 'error' || state === 'closed') {
+        // Clear connection timeout
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
+        
+        // Only update status if we were trying to connect (not during disconnect)
+        const currentStatus = this.connectionStatus$.value;
+        if (currentStatus.step === 'connecting') {
+          this.connectionStatus$.next({ step: 'idle', completed: false });
+          if (state === 'error') {
+            this.connectionError$.next('Connection failed. Please check your network connection and try again.');
+          }
+        }
+      }
+    });
   }
 
   private setupPeerToPeerMessageHandlers(): void {
@@ -170,6 +194,13 @@ export class GameService {
       switch (message.type) {
         case 'connected':
           console.log('Received connected message:', message.player?.username, 'token:', message.token ? 'present' : 'missing');
+          
+          // Clear connection timeout on successful connection
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
+          
           this.connectionStatus$.next({ step: 'connected', completed: true });
           if (message.player) {
             this.currentPlayer$.next(message.player);
@@ -451,6 +482,23 @@ export class GameService {
     // For initial login, allow connection without token
     // Token will be received after successful connection
     this.connectionStatus$.next({ step: 'connecting', completed: false });
+    
+    // Clear any existing timeout
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+    
+    // Set timeout for connection (10 seconds)
+    this.connectionTimeout = setTimeout(() => {
+      if (!this.wsService.isConnected()) {
+        // Connection failed - update status and show error
+        this.connectionStatus$.next({ step: 'idle', completed: false });
+        this.connectionError$.next('Connection timeout. Please check your network connection and try again.');
+        console.error('WebSocket connection timeout');
+      }
+    }, 10000);
+    
     this.wsService.connect(username);
     // Player ID will be set when 'connected' message is received from backend
     // Note: WebRTC is not connected during initial login, only after token is received
@@ -464,6 +512,23 @@ export class GameService {
       return;
     }
     this.connectionStatus$.next({ step: 'connecting', completed: false });
+    
+    // Clear any existing timeout
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+    
+    // Set timeout for connection (10 seconds)
+    this.connectionTimeout = setTimeout(() => {
+      if (!this.wsService.isConnected()) {
+        // Connection failed - update status and show error
+        this.connectionStatus$.next({ step: 'idle', completed: false });
+        this.connectionError$.next('Connection timeout. Please check your network connection and try again.');
+        console.error('WebSocket connection timeout');
+      }
+    }, 10000);
+    
     // Get username from token or localStorage
     const username = localStorage.getItem('snake_game_username') || 'player';
     this.wsService.connect(username, token);

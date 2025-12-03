@@ -9,6 +9,8 @@ export class WebSocketService {
   private ws: WebSocket | null = null;
   private messageSubject = new Subject<any>();
   public messages$ = this.messageSubject.asObservable();
+  private connectionStateSubject = new Subject<'connecting' | 'connected' | 'error' | 'closed'>();
+  public connectionState$ = this.connectionStateSubject.asObservable();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
@@ -101,10 +103,12 @@ export class WebSocketService {
         return;
       }
       this.ws = new WebSocket(wsUrl);
+      this.connectionStateSubject.next('connecting');
 
       this.ws.onopen = () => {
         console.log('WebSocket connected, readyState:', this.ws?.readyState);
         this.reconnectAttempts = 0;
+        this.connectionStateSubject.next('connected');
       };
 
       this.ws.onmessage = (event) => {
@@ -124,11 +128,13 @@ export class WebSocketService {
         // Only log error if connection was actually attempted (not during cleanup)
         if (this.shouldReconnect) {
           console.error('WebSocket error:', error);
+          this.connectionStateSubject.next('error');
         }
       };
 
       this.ws.onclose = (event) => {
         console.log('WebSocket closed', event.code, event.reason);
+        this.connectionStateSubject.next('closed');
         // Only attempt reconnect if:
         // 1. shouldReconnect is true (not manually disconnected)
         // 2. We haven't exceeded max attempts
@@ -231,11 +237,11 @@ export class WebSocketService {
       }
     }
 
-    // Production: Use environment or default to same host
+    // Production: Use same hostname as frontend, but with backend port (8020)
+    // This works for Docker Compose where frontend is on port 80 and backend on 8020
     if (environment.production) {
-      const apiUrl = environment.apiUrl || `${protocol === 'wss:' ? 'https:' : 'http:'}//${host}`;
-      const baseUrl = apiUrl.replace('/api', '').replace('http://', '').replace('https://', '');
-      return `${protocol}//${baseUrl}/ws`;
+      // Use the same hostname as the frontend, but with port 8020
+      return `${protocol}//${host}:8020/ws`;
     }
 
     // Default: Use port 8020 (backend port)

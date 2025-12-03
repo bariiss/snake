@@ -89,9 +89,9 @@ export class ConnectionStatusService {
   private monitorWebSocket(): void {
     // Check WebSocket status periodically
     setInterval(() => {
-      if (this.wsService.isConnected()) {
-        const ws = (this.wsService as any).ws;
-        const readyState = ws?.readyState;
+      const ws = (this.wsService as any).ws;
+      if (ws) {
+        const readyState = ws.readyState;
         let status: ConnectionStatus['websocket']['status'];
         
         switch (readyState) {
