@@ -117,7 +117,7 @@ func (m *Manager) RemovePeer(playerID string) {
 	}
 }
 
-func (m *Manager) SendMessage(playerID string, messageType string, data interface{}) error {
+func (m *Manager) SendMessage(playerID string, messageType string, data any) error {
 	peer, exists := m.GetPeer(playerID)
 	if !exists || peer.DataChannel == nil {
 		return nil // Peer not found or channel not ready
@@ -127,7 +127,7 @@ func (m *Manager) SendMessage(playerID string, messageType string, data interfac
 		return nil // Channel not open
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"type": messageType,
 		"data": data,
 	}

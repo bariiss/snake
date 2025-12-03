@@ -26,70 +26,80 @@ func (gm *Manager) RemovePlayer(playerID string) {
 
 	for gameID, game := range gm.Games {
 		game.Mutex.Lock()
-		if game.Player1.ID == playerID || (game.Player2 != nil && game.Player2.ID == playerID) {
-			isActive := game.IsActive
-			isSinglePlayer := game.IsSinglePlayer
-			var disconnectedPlayer, otherPlayer *models.Player
-			if game.Player1.ID == playerID {
-				disconnectedPlayer = game.Player1
-				otherPlayer = game.Player2
-				// Clear disconnected player's Send channel to mark as inactive
-				game.Player1.Send = nil
-			} else if game.Player2 != nil && game.Player2.ID == playerID {
-				disconnectedPlayer = game.Player2
-				otherPlayer = game.Player1
-				// Clear disconnected player's Send channel to mark as inactive
-				game.Player2.Send = nil
-			}
-			// Stop game ticker if game is active (for both single and multiplayer)
-			if isActive && game.Ticker != nil {
-				game.Ticker.Stop()
-				game.Ticker = nil
-				game.IsActive = false
+		// Check if player is in this game
+		isPlayer := game.Player1.ID == playerID || (game.Player2 != nil && game.Player2.ID == playerID)
+		if !isPlayer {
+			// Check if spectator
+			_, isSpectator := game.Spectators[playerID]
+			if isSpectator {
+				delete(game.Spectators, playerID)
+				game.Mutex.Unlock()
+				gm.BroadcastGamesList()
+				return
 			}
 			game.Mutex.Unlock()
-			if isActive {
-				gm.endGame(game, "disconnect", game.State)
-			}
-			// Only send disconnect message if it's a multiplayer game
-			if otherPlayer != nil && disconnectedPlayer != nil && !isSinglePlayer {
-				if isActive {
-					gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
-						"game_id": gameID,
-						"player":  disconnectedPlayer.Username,
-						"message": disconnectedPlayer.Username + " has left the game",
-					})
-					// Add other player back to lobby if they still have active connection
-					if otherPlayer.Send != nil {
-						if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
-							gm.AddToLobby(otherPlayer)
-						}
-					}
-					// Broadcast updated lobby status (disconnected player will show as "in game" until they reconnect)
-					gm.BroadcastLobbyStatus()
-				} else {
-					gm.sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
-						"from_player": disconnectedPlayer,
-						"message":     fmt.Sprintf("%s left the lobby", disconnectedPlayer.Username),
-					})
-					// Add other player back to lobby if they still have active connection
-					if otherPlayer.Send != nil {
-						if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
-							gm.AddToLobby(otherPlayer)
-						}
-					}
-				}
-			}
+			continue
+		}
+
+		// Player is in this game
+		isActive := game.IsActive
+		isSinglePlayer := game.IsSinglePlayer
+		var disconnectedPlayer, otherPlayer *models.Player
+
+		// Determine which player is disconnecting
+		if game.Player1.ID == playerID {
+			disconnectedPlayer = game.Player1
+			otherPlayer = game.Player2
+			game.Player1.Send = nil
+		}
+		if game.Player2 != nil && game.Player2.ID == playerID {
+			disconnectedPlayer = game.Player2
+			otherPlayer = game.Player1
+			game.Player2.Send = nil
+		}
+		// Stop game ticker if game is active (for both single and multiplayer)
+		if isActive && game.Ticker != nil {
+			game.Ticker.Stop()
+			game.Ticker = nil
+			game.IsActive = false
+		}
+		game.Mutex.Unlock()
+
+		if isActive {
+			gm.endGame(game, "disconnect", game.State)
+		}
+
+		// Only send disconnect message if it's a multiplayer game
+		if otherPlayer == nil || disconnectedPlayer == nil || isSinglePlayer {
 			delete(gm.Games, gameID)
 			return
 		}
-		if _, isSpectator := game.Spectators[playerID]; isSpectator {
-			delete(game.Spectators, playerID)
-			game.Mutex.Unlock()
-			gm.BroadcastGamesList()
-			return
+
+		// Send appropriate message based on game state
+		if isActive {
+			gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
+				"game_id": gameID,
+				"player":  disconnectedPlayer.Username,
+				"message": disconnectedPlayer.Username + " has left the game",
+			})
+			// Broadcast updated lobby status (disconnected player will show as "in game" until they reconnect)
+			gm.BroadcastLobbyStatus()
 		}
-		game.Mutex.Unlock()
+		if !isActive {
+			gm.sendMessage(otherPlayer, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+				"from_player": disconnectedPlayer,
+				"message":     fmt.Sprintf("%s left the lobby", disconnectedPlayer.Username),
+			})
+		}
+
+		// Add other player back to lobby if they still have active connection (common for both cases)
+		if otherPlayer.Send != nil {
+			if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
+				gm.AddToLobby(otherPlayer)
+			}
+		}
+		delete(gm.Games, gameID)
+		return
 	}
 }
 
@@ -159,11 +169,10 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 		return
 	}
 
-	var otherPlayer *models.Player
+	// Determine other player
+	otherPlayer := game.Player1
 	if game.Player1.ID == player.ID {
 		otherPlayer = game.Player2
-	} else {
-		otherPlayer = game.Player1
 	}
 	game.Mutex.Unlock()
 
@@ -175,10 +184,11 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 		})
 		// Remove player from game and add back to lobby
 		delete(gm.Games, gameID)
-		if player.Send != nil {
-			if _, exists := gm.Lobby.Get(player.ID); !exists {
-				gm.AddToLobby(player)
-			}
+		if player.Send == nil {
+			return
+		}
+		if _, exists := gm.Lobby.Get(player.ID); !exists {
+			gm.AddToLobby(player)
 		}
 		return
 	}

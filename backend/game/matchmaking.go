@@ -68,28 +68,34 @@ func (gm *Manager) CancelGameRequest(from *models.Player, toID string) {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
-	if targetRequests, exists := gm.PendingRequests[toID]; exists {
-		if game, hasRequest := targetRequests[from.ID]; hasRequest {
-			delete(targetRequests, from.ID)
-			if len(targetRequests) == 0 {
-				delete(gm.PendingRequests, toID)
-			}
-
-			delete(gm.Games, game.ID)
-
-			if target, ok := gm.Lobby.Get(toID); ok {
-				gm.sendMessage(target, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
-					"from_player": from,
-					"message":     fmt.Sprintf("%s cancelled the game request", from.Username),
-				})
-			}
-
-			gm.sendMessage(from, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
-				"to_player": toID,
-				"status":    "cancelled",
-			})
-		}
+	targetRequests, exists := gm.PendingRequests[toID]
+	if !exists {
+		return
 	}
+
+	game, hasRequest := targetRequests[from.ID]
+	if !hasRequest {
+		return
+	}
+
+	delete(targetRequests, from.ID)
+	if len(targetRequests) == 0 {
+		delete(gm.PendingRequests, toID)
+	}
+
+	delete(gm.Games, game.ID)
+
+	if target, ok := gm.Lobby.Get(toID); ok {
+		gm.sendMessage(target, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+			"from_player": from,
+			"message":     fmt.Sprintf("%s cancelled the game request", from.Username),
+		})
+	}
+
+	gm.sendMessage(from, constants.MSG_GAME_REQUEST_CANCEL, map[string]any{
+		"to_player": toID,
+		"status":    "cancelled",
+	})
 }
 
 func (gm *Manager) AcceptGameRequest(player *models.Player, gameID string) {
@@ -112,18 +118,20 @@ func (gm *Manager) AcceptGameRequest(player *models.Player, gameID string) {
 	}
 
 	gm.Mutex.Lock()
-	if targetRequests, exists := gm.PendingRequests[player.ID]; exists {
+	targetRequests, exists := gm.PendingRequests[player.ID]
+	if exists {
 		delete(targetRequests, game.Player1.ID)
 		if len(targetRequests) == 0 {
 			delete(gm.PendingRequests, player.ID)
 		}
 	}
 	for targetID, requests := range gm.PendingRequests {
-		if targetID != player.ID {
-			delete(requests, player.ID)
-			if len(requests) == 0 {
-				delete(gm.PendingRequests, targetID)
-			}
+		if targetID == player.ID {
+			continue
+		}
+		delete(requests, player.ID)
+		if len(requests) == 0 {
+			delete(gm.PendingRequests, targetID)
 		}
 	}
 	gm.Mutex.Unlock()
@@ -145,26 +153,29 @@ func (gm *Manager) AcceptGameRequest(player *models.Player, gameID string) {
 func (gm *Manager) RejectGameRequest(player *models.Player, gameID string) {
 	gm.Mutex.Lock()
 	game, exists := gm.Games[gameID]
+	gm.Mutex.Unlock()
+
 	if !exists {
-		gm.Mutex.Unlock()
 		return
 	}
 
-	if game.Player2.ID == player.ID {
-		if targetRequests, exists := gm.PendingRequests[player.ID]; exists {
-			delete(targetRequests, game.Player1.ID)
-			if len(targetRequests) == 0 {
-				delete(gm.PendingRequests, player.ID)
-			}
-		}
-		delete(gm.Games, gameID)
-		gm.Mutex.Unlock()
-
-		gm.sendMessage(game.Player1, constants.MSG_GAME_REJECT, map[string]any{
-			"game_id":     gameID,
-			"from_player": player,
-		})
-	} else {
-		gm.Mutex.Unlock()
+	if game.Player2.ID != player.ID {
+		return
 	}
+
+	gm.Mutex.Lock()
+	targetRequests, exists := gm.PendingRequests[player.ID]
+	if exists {
+		delete(targetRequests, game.Player1.ID)
+		if len(targetRequests) == 0 {
+			delete(gm.PendingRequests, player.ID)
+		}
+	}
+	delete(gm.Games, gameID)
+	gm.Mutex.Unlock()
+
+	gm.sendMessage(game.Player1, constants.MSG_GAME_REJECT, map[string]any{
+		"game_id":     gameID,
+		"from_player": player,
+	})
 }

@@ -63,5 +63,5 @@ func (spgm *SinglePlayerGameManager) HandlePlayerReady(player *models.Player, ga
 		return
 	}
 
-	spgm.manager.PlayerReady(player, gameID)
+	spgm.manager.PlayerReadySingle(player, gameID)
 }

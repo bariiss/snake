@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"log"
+	"maps"
 	"strings"
 
 	"snake-backend/constants"
@@ -43,10 +44,11 @@ func (gm *Manager) UsernameExists(username string) bool {
 		}
 		// Check spectators - only if has active connection
 		for _, spectator := range game.Spectators {
-			if strings.EqualFold(spectator.Username, username) && spectator.Send != nil {
-				game.Mutex.RUnlock()
-				return true
+			if !strings.EqualFold(spectator.Username, username) || spectator.Send == nil {
+				continue
 			}
+			game.Mutex.RUnlock()
+			return true
 		}
 		game.Mutex.RUnlock()
 	}
@@ -91,7 +93,8 @@ func (gm *Manager) FindPlayerByID(playerID string) *models.Player {
 		}
 		// Check spectators
 		if game.Spectators != nil {
-			if spectator, exists := game.Spectators[playerID]; exists {
+			spectator, exists := game.Spectators[playerID]
+			if exists {
 				game.Mutex.RUnlock()
 				return spectator
 			}
@@ -133,10 +136,11 @@ func (gm *Manager) FindPlayerByUsername(username string) *models.Player {
 		}
 		// Check spectators
 		for _, spectator := range game.Spectators {
-			if strings.EqualFold(spectator.Username, username) {
-				game.Mutex.RUnlock()
-				return spectator
+			if !strings.EqualFold(spectator.Username, username) {
+				continue
 			}
+			game.Mutex.RUnlock()
+			return spectator
 		}
 		game.Mutex.RUnlock()
 	}
@@ -210,9 +214,7 @@ func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[s
 	message := map[string]any{
 		"type": msgType,
 	}
-	for k, v := range data {
-		message[k] = v
-	}
+	maps.Copy(message, data)
 
 	jsonData, _ := json.Marshal(message)
 
@@ -241,7 +243,7 @@ func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[s
 }
 
 // SendPeerOffer sends a peer-to-peer offer to a player
-func (gm *Manager) SendPeerOffer(playerID string, offer interface{}) {
+func (gm *Manager) SendPeerOffer(playerID string, offer any) {
 	gm.Mutex.RLock()
 	player, exists := gm.Lobby.Get(playerID)
 	gm.Mutex.RUnlock()
@@ -257,7 +259,7 @@ func (gm *Manager) SendPeerOffer(playerID string, offer interface{}) {
 }
 
 // SendPeerAnswer sends a peer-to-peer answer to a player
-func (gm *Manager) SendPeerAnswer(playerID string, answer interface{}) {
+func (gm *Manager) SendPeerAnswer(playerID string, answer any) {
 	gm.Mutex.RLock()
 	player, exists := gm.Lobby.Get(playerID)
 	gm.Mutex.RUnlock()
@@ -273,7 +275,7 @@ func (gm *Manager) SendPeerAnswer(playerID string, answer interface{}) {
 }
 
 // SendICECandidate sends an ICE candidate to a player
-func (gm *Manager) SendICECandidate(playerID string, candidate interface{}) {
+func (gm *Manager) SendICECandidate(playerID string, candidate any) {
 	gm.Mutex.RLock()
 	player, exists := gm.Lobby.Get(playerID)
 	gm.Mutex.RUnlock()
@@ -309,30 +311,35 @@ func (gm *Manager) SendGamesList(player *models.Player) {
 		if !game.IsSinglePlayer && game.Player2 != nil {
 			gameInfo["player2"] = game.Player2.Username
 		}
-		if game.State.Status == "playing" {
-			if game.IsSinglePlayer {
-				// Single player game - only one score
-				gameInfo["scores"] = map[string]int{
-					game.Player1.Username: 0,
+		if game.State.Status != "playing" {
+			game.Mutex.RUnlock()
+			gamesList = append(gamesList, gameInfo)
+			continue
+		}
+
+		if game.IsSinglePlayer {
+			// Single player game - only one score
+			gameInfo["scores"] = map[string]int{
+				game.Player1.Username: 0,
+			}
+			for _, snake := range game.State.Snakes {
+				if snake.ID != game.Player1.ID {
+					continue
 				}
-				for _, snake := range game.State.Snakes {
-					if snake.ID == game.Player1.ID {
-						gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
-					}
-				}
-			} else {
-				// Multiplayer game - two scores
-				gameInfo["scores"] = map[string]int{
-					game.Player1.Username: 0,
-					game.Player2.Username: 0,
-				}
-				for _, snake := range game.State.Snakes {
-					switch snake.ID {
-					case game.Player1.ID:
-						gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
-					case game.Player2.ID:
-						gameInfo["scores"].(map[string]int)[game.Player2.Username] = snake.Score
-					}
+				gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
+			}
+		} else {
+			// Multiplayer game - two scores
+			gameInfo["scores"] = map[string]int{
+				game.Player1.Username: 0,
+				game.Player2.Username: 0,
+			}
+			for _, snake := range game.State.Snakes {
+				switch snake.ID {
+				case game.Player1.ID:
+					gameInfo["scores"].(map[string]int)[game.Player1.Username] = snake.Score
+				case game.Player2.ID:
+					gameInfo["scores"].(map[string]int)[game.Player2.Username] = snake.Score
 				}
 			}
 		}

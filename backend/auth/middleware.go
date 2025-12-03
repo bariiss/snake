@@ -11,35 +11,19 @@ import (
 func AuthMiddleware(gameManager *game.Manager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Extract token from Authorization header
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				// Try to get from query parameter for WebSocket connections
-				token := r.URL.Query().Get("token")
-				if token == "" {
-					http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
-					return
-				}
-				authHeader = "Bearer " + token
-			}
-
-			tokenString, err := ExtractTokenFromHeader(authHeader)
+			// Extract and validate token
+			claims, err := extractAndValidateToken(r, w)
 			if err != nil {
-				http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
-				return
-			}
-
-			// Validate token
-			claims, err := ValidateToken(tokenString)
-			if err != nil {
-				log.Printf("Token validation error: %v", err)
-				http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 				return
 			}
 
 			// Verify player exists and is active
 			player := gameManager.FindPlayerByID(claims.PlayerID)
-			if player == nil || player.Send == nil {
+			if player == nil {
+				http.Error(w, "Unauthorized: Player not found or inactive", http.StatusUnauthorized)
+				return
+			}
+			if player.Send == nil {
 				http.Error(w, "Unauthorized: Player not found or inactive", http.StatusUnauthorized)
 				return
 			}
@@ -57,6 +41,48 @@ func AuthMiddleware(gameManager *game.Manager) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// extractTokenFromRequest extracts token from Authorization header or query parameter
+func extractTokenFromRequest(r *http.Request, w http.ResponseWriter) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		return authHeader, nil
+	}
+
+	// Try to get from query parameter for WebSocket connections
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
+		return "", http.ErrBodyReadAfterClose
+	}
+	return "Bearer " + token, nil
+}
+
+// extractAndValidateToken extracts token from request and validates it
+// Returns nil claims and error if validation fails (error already sent to client)
+func extractAndValidateToken(r *http.Request, w http.ResponseWriter) (*Claims, error) {
+	// Extract token from request
+	authHeader, err := extractTokenFromRequest(r, w)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenString, err := ExtractTokenFromHeader(authHeader)
+	if err != nil {
+		http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
+		return nil, err
+	}
+
+	// Validate token
+	claims, err := ValidateToken(tokenString)
+	if err != nil {
+		log.Printf("Token validation error: %v", err)
+		http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+		return nil, err
+	}
+
+	return claims, nil
 }
 
 // GameAuthorization checks if player is authorized to access a specific game
@@ -79,13 +105,11 @@ func GameAuthorization(gameManager *game.Manager, gameID string, playerID string
 	if game.Player2 != nil && game.Player2.ID == playerID {
 		return true
 	}
-	if game.Spectators != nil {
-		if _, exists := game.Spectators[playerID]; exists {
-			return true
-		}
+	if game.Spectators == nil {
+		return false
 	}
-
-	return false
+	_, spectatorExists := game.Spectators[playerID]
+	return spectatorExists
 }
 
 // GetPlayerFromRequest extracts player from request headers

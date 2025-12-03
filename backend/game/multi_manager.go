@@ -37,13 +37,11 @@ func (mgm *MultiplayerGameManager) AuthorizeGameAccess(playerID, gameID string) 
 	if game.Player2 != nil && game.Player2.ID == playerID {
 		return true
 	}
-	if game.Spectators != nil {
-		if _, exists := game.Spectators[playerID]; exists {
-			return true
-		}
+	if game.Spectators == nil {
+		return false
 	}
-
-	return false
+	_, spectatorExists := game.Spectators[playerID]
+	return spectatorExists
 }
 
 // HandlePlayerMove handles player move in multiplayer game
@@ -71,7 +69,7 @@ func (mgm *MultiplayerGameManager) HandlePlayerReady(player *models.Player, game
 		return
 	}
 
-	mgm.manager.PlayerReady(player, gameID)
+	mgm.manager.PlayerReadyMulti(player, gameID)
 }
 
 // HandleRematchRequest handles rematch request in multiplayer game

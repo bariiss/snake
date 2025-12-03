@@ -6,19 +6,19 @@ import (
 )
 
 // HandleWebRTCMessage handles messages from WebRTC DataChannel
-func (gm *Manager) HandleWebRTCMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+func (gm *Manager) HandleWebRTCMessage(player *models.Player, msgType string, msg map[string]any) {
 	// Reuse the same message handler
 	gm.handleMessage(player, msgType, msg)
 }
 
 // HandleWebSocketMessage handles messages from WebSocket
-func (gm *Manager) HandleWebSocketMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+func (gm *Manager) HandleWebSocketMessage(player *models.Player, msgType string, msg map[string]any) {
 	// Reuse the same message handler
 	gm.handleMessage(player, msgType, msg)
 }
 
 // handleMessage processes incoming messages from players
-func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[string]interface{}) {
+func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[string]any) {
 	switch msgType {
 	case constants.MSG_JOIN_LOBBY:
 		gm.AddToLobby(player)
@@ -41,32 +41,38 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 			gm.RejectGameRequest(player, gameID)
 		}
 	case constants.MSG_PLAYER_READY:
-		if gameID, ok := msg["game_id"].(string); ok {
-			// Check if single player or multiplayer
-			gm.Mutex.RLock()
-			game, exists := gm.Games[gameID]
-			gm.Mutex.RUnlock()
+		gameID, ok := msg["game_id"].(string)
+		if !ok {
+			break
+		}
+		// Check if single player or multiplayer
+		gm.Mutex.RLock()
+		game, exists := gm.Games[gameID]
+		gm.Mutex.RUnlock()
 
-			if exists && game.IsSinglePlayer {
-				gm.SinglePlayerManager.HandlePlayerReady(player, gameID)
-			} else {
-				gm.MultiplayerManager.HandlePlayerReady(player, gameID)
-			}
+		if exists && game.IsSinglePlayer {
+			gm.SinglePlayerManager.HandlePlayerReady(player, gameID)
+		} else {
+			gm.MultiplayerManager.HandlePlayerReady(player, gameID)
 		}
 	case constants.MSG_PLAYER_MOVE:
-		if gameID, ok := msg["game_id"].(string); ok {
-			if direction, ok := msg["direction"].(string); ok {
-				// Check if single player or multiplayer
-				gm.Mutex.RLock()
-				game, exists := gm.Games[gameID]
-				gm.Mutex.RUnlock()
+		gameID, ok := msg["game_id"].(string)
+		if !ok {
+			break
+		}
+		direction, ok := msg["direction"].(string)
+		if !ok {
+			break
+		}
+		// Check if single player or multiplayer
+		gm.Mutex.RLock()
+		game, exists := gm.Games[gameID]
+		gm.Mutex.RUnlock()
 
-				if exists && game.IsSinglePlayer {
-					gm.SinglePlayerManager.HandlePlayerMove(player, gameID, direction)
-				} else {
-					gm.MultiplayerManager.HandlePlayerMove(player, gameID, direction)
-				}
-			}
+		if exists && game.IsSinglePlayer {
+			gm.SinglePlayerManager.HandlePlayerMove(player, gameID, direction)
+		} else {
+			gm.MultiplayerManager.HandlePlayerMove(player, gameID, direction)
 		}
 	case constants.MSG_LIST_GAMES:
 		gm.SendGamesList(player)

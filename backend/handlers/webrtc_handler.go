@@ -105,7 +105,7 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return answer to client
-	response := map[string]interface{}{
+	response := map[string]any{
 		"player_id": player.ID,
 		"answer": map[string]string{
 			"type": answer.Type.String(),
@@ -124,7 +124,7 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 
 	// Set up data channel message handler
 	peer.DataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		var messageData map[string]interface{}
+		var messageData map[string]any
 		if err := json.Unmarshal(msg.Data, &messageData); err != nil {
 			return
 		}
@@ -139,7 +139,7 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Send connected message
-	h.webrtcManager.SendMessage(player.ID, "connected", map[string]interface{}{
+	h.webrtcManager.SendMessage(player.ID, "connected", map[string]any{
 		"player": player,
 	})
 }

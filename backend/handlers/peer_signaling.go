@@ -56,7 +56,7 @@ func NewPeerSignalingHandler(gameManager *game.Manager) *PeerSignalingHandler {
 
 // HandlePeerOffer handles WebRTC offer from one client to another
 func (h *PeerSignalingHandler) HandlePeerOffer(w http.ResponseWriter, r *http.Request) {
-	h.enableCORS(w, r)
+	h.enableCORS(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -95,7 +95,7 @@ func (h *PeerSignalingHandler) HandlePeerOffer(w http.ResponseWriter, r *http.Re
 
 // HandlePeerAnswer handles WebRTC answer from one client to another
 func (h *PeerSignalingHandler) HandlePeerAnswer(w http.ResponseWriter, r *http.Request) {
-	h.enableCORS(w, r)
+	h.enableCORS(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -134,7 +134,7 @@ func (h *PeerSignalingHandler) HandlePeerAnswer(w http.ResponseWriter, r *http.R
 
 // HandleICECandidate handles ICE candidate exchange between peers
 func (h *PeerSignalingHandler) HandleICECandidate(w http.ResponseWriter, r *http.Request) {
-	h.enableCORS(w, r)
+	h.enableCORS(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -166,7 +166,7 @@ func (h *PeerSignalingHandler) HandleICECandidate(w http.ResponseWriter, r *http
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
-func (h *PeerSignalingHandler) enableCORS(w http.ResponseWriter, r *http.Request) {
+func (h *PeerSignalingHandler) enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
