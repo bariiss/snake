@@ -24,7 +24,7 @@ export interface ConnectionStatus {
 @Injectable({
   providedIn: 'root'
 })
-export class ConnectionStatusService {
+export class ConnectionStatusService implements OnDestroy {
   private websocketStatus$ = new BehaviorSubject<ConnectionStatus['websocket']>({
     status: 'disconnected'
   });
@@ -206,4 +206,3 @@ export class ConnectionStatusService {
     }, 1000);
   }
 }
-

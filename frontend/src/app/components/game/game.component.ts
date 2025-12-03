@@ -122,8 +122,25 @@ export class GameComponent implements OnInit, OnDestroy {
           
           // Check if game is finished - redirect if accessing finished game URL
           if (state.status === 'finished' && state.id === this.gameId && !this.isRedirecting) {
-            // Game is finished, redirect based on login status
+            // Game is finished, set redirecting flag immediately to prevent multiple redirects
+            this.isRedirecting = true;
+            // Clear game state to prevent further updates
+            this.gameState = null;
+            // Clear game state from service immediately to stop receiving updates for this game
+            // This prevents the subscription from triggering redirect multiple times
+            this.gameService.getCurrentGameState().subscribe(currentState => {
+              if (currentState?.id === this.gameId) {
+                // Clear the game state for this specific game
+                this.gameService.leaveGame(this.gameId);
+              }
+            }).unsubscribe();
+            // Redirect based on login status (only once)
             redirectBasedOnLoginStatus('This game has ended.');
+            return;
+          }
+          
+          // If already redirecting, ignore further updates to prevent loops
+          if (this.isRedirecting) {
             return;
           }
           

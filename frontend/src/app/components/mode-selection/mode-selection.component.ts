@@ -73,7 +73,8 @@ export class ModeSelectionComponent implements OnInit, OnDestroy {
     // Listen for single player game start
     this.subscriptions.add(
       this.gameService.getCurrentGameState().subscribe(state => {
-        if (state && state.id) {
+        // Only navigate if game is not finished and has an ID
+        if (state && state.id && state.status !== 'finished') {
           // Single player game started, navigate to game
           this.router.navigate(['/game/single', state.id]);
         }
