@@ -117,7 +117,15 @@ func (gm *Manager) AddSpectator(player *models.Player, gameID string) {
 	}
 
 	game.Mutex.Lock()
-	if game.Player1.ID == player.ID || game.Player2.ID == player.ID {
+	if game.Player1.ID == player.ID {
+		game.Mutex.Unlock()
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "You are already a player in this game",
+			"code":    "ALREADY_PLAYER",
+		})
+		return
+	}
+	if game.Player2 != nil && game.Player2.ID == player.ID {
 		game.Mutex.Unlock()
 		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
 			"message": "You are already a player in this game",
@@ -160,13 +168,15 @@ func (gm *Manager) HandleRematchRequest(player *models.Player, gameID string) {
 	}
 
 	game.Mutex.Lock()
-	if game.Player1.ID != player.ID && game.Player2.ID != player.ID {
-		game.Mutex.Unlock()
-		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
-			"message": "Only players can request rematch",
-			"code":    "NOT_A_PLAYER",
-		})
-		return
+	if game.Player1.ID != player.ID {
+		if game.Player2 == nil || game.Player2.ID != player.ID {
+			game.Mutex.Unlock()
+			gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+				"message": "Only players can request rematch",
+				"code":    "NOT_A_PLAYER",
+			})
+			return
+		}
 	}
 
 	// Determine other player
@@ -215,13 +225,15 @@ func (gm *Manager) HandleRematchAccept(player *models.Player, gameID string) {
 	}
 
 	game.Mutex.Lock()
-	if game.Player1.ID != player.ID && game.Player2.ID != player.ID {
-		game.Mutex.Unlock()
-		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
-			"message": "Only players can accept rematch",
-			"code":    "NOT_A_PLAYER",
-		})
-		return
+	if game.Player1.ID != player.ID {
+		if game.Player2 == nil || game.Player2.ID != player.ID {
+			game.Mutex.Unlock()
+			gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+				"message": "Only players can accept rematch",
+				"code":    "NOT_A_PLAYER",
+			})
+			return
+		}
 	}
 	game.Mutex.Unlock()
 
@@ -245,6 +257,15 @@ func (gm *Manager) startRematch(gameID string) {
 		return
 	}
 
+	// Rematch is only for multiplayer games
+	game.Mutex.RLock()
+	isMultiplayer := !game.IsSinglePlayer && game.Player2 != nil
+	game.Mutex.RUnlock()
+
+	if !isMultiplayer {
+		return
+	}
+
 	// Countdown from 5 to 1
 	for i := 5; i > 0; i-- {
 		gm.broadcastToPlayers(game, constants.MSG_REMATCH_COUNTDOWN, map[string]any{
@@ -260,7 +281,9 @@ func (gm *Manager) startRematch(gameID string) {
 	game.State.Countdown = 0
 	game.State.Winner = ""
 	game.Player1.Ready = false
-	game.Player2.Ready = false
+	if game.Player2 != nil {
+		game.Player2.Ready = false
+	}
 
 	// Reset snakes
 	snake1 := models.Snake{
@@ -273,17 +296,21 @@ func (gm *Manager) startRematch(gameID string) {
 		Username:  game.Player1.Username,
 	}
 
-	snake2 := models.Snake{
-		ID:        game.Player2.ID,
-		Body:      []models.Position{{X: 35, Y: 15}, {X: 36, Y: 15}, {X: 37, Y: 15}},
-		Direction: constants.LEFT,
-		NextDir:   constants.LEFT,
-		Color:     "#0000FF",
-		Score:     0,
-		Username:  game.Player2.Username,
+	var snake2 models.Snake
+	if game.Player2 != nil {
+		snake2 = models.Snake{
+			ID:        game.Player2.ID,
+			Body:      []models.Position{{X: 35, Y: 15}, {X: 36, Y: 15}, {X: 37, Y: 15}},
+			Direction: constants.LEFT,
+			NextDir:   constants.LEFT,
+			Color:     "#0000FF",
+			Score:     0,
+			Username:  game.Player2.Username,
+		}
+		game.State.Snakes = []models.Snake{snake1, snake2}
+	} else {
+		game.State.Snakes = []models.Snake{snake1}
 	}
-
-	game.State.Snakes = []models.Snake{snake1, snake2}
 	game.State.Food = models.Food{Position: gm.generateFood([]models.Snake{snake1, snake2})}
 	game.IsActive = true
 	game.Mutex.Unlock()
