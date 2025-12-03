@@ -328,6 +328,13 @@ export class GameService {
           }
           break;
         case 'game_update':
+          // Ignore game_update from WebSocket if P2P connection is established
+          // P2P connection should handle game updates for multiplayer games
+          if (this.webrtcService.isPeerConnected()) {
+            console.log('Ignoring game_update from WebSocket - P2P connection is active');
+            break;
+          }
+          
           console.log('Received game_update:', message.data?.status, 'gameId:', message.data?.id);
           const previousState = this.currentGameState$.value;
           this.currentGameState$.next(message.data);

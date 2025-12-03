@@ -527,18 +527,18 @@ export class WebRTCService {
     if (host === 'localhost' || host === '127.0.0.1') {
       // Check if we're in development mode (Angular dev server)
       if (window.location.port === '4200' || !window.location.port) {
-        return `${protocol}//${host}:8020`;
+        const url = `${protocol}//${host}:8020`;
+        console.log('WebRTC URL (dev):', url);
+        return url;
       }
     }
     
-    // Production: Use environment or default to same host
-    if (environment.production) {
-      const apiUrl = environment.apiUrl || `${protocol}//${host}`;
-      return apiUrl.replace('/api', '');
-    }
-    
-    // Default: Use port 8020 (backend port)
-    return `${protocol}//${host}:8020`;
+    // Production or Docker: Use same hostname as frontend, but with backend port (8020)
+    // This works for Docker Compose where frontend is on port 80 and backend on 8020
+    // Never use 'backend' hostname - it's only valid inside Docker network, not in browser
+    const url = `${protocol}//${host}:8020`;
+    console.log('WebRTC URL:', url, 'hostname:', host, 'production:', environment.production);
+    return url;
   }
 
   /**

@@ -229,23 +229,23 @@ export class WebSocketService {
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
+    const port = window.location.port;
 
     // Development: Angular dev server (4200) -> Backend (8020)
     if (host === 'localhost' || host === '127.0.0.1') {
-      if (window.location.port === '4200' || !window.location.port) {
-        return `${protocol}//${host}:8020/ws`;
+      if (port === '4200' || !port) {
+        const url = `${protocol}//${host}:8020/ws`;
+        console.log('WebSocket URL (dev):', url);
+        return url;
       }
     }
 
-    // Production: Use same hostname as frontend, but with backend port (8020)
+    // Production or Docker: Use same hostname as frontend, but with backend port (8020)
     // This works for Docker Compose where frontend is on port 80 and backend on 8020
-    if (environment.production) {
-      // Use the same hostname as the frontend, but with port 8020
-      return `${protocol}//${host}:8020/ws`;
-    }
-
-    // Default: Use port 8020 (backend port)
-    return `${protocol}//${host}:8020/ws`;
+    // Never use 'backend' hostname - it's only valid inside Docker network, not in browser
+    const url = `${protocol}//${host}:8020/ws`;
+    console.log('WebSocket URL:', url, 'hostname:', host, 'production:', environment.production);
+    return url;
   }
 }
 
