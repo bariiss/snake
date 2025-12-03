@@ -219,6 +219,11 @@ export class GameService {
               // WebRTC will be connected only when multiplayer game starts (in startPeerToPeerConnection)
               // Don't connect WebRTC on initial connection - it's only needed for multiplayer games
             }
+            
+            // Check if we have an active game state (reconnection scenario)
+            // Backend will send game_update if player is in an active game
+            // We'll handle navigation in game_update handler
+            
             // Player is connected but not in lobby yet
             // Frontend will show mode selection (single/multiplayer)
             // joinLobby() will be called when multiplayer is selected
@@ -342,14 +347,18 @@ export class GameService {
           console.log('Received game_update:', message.data?.status, 'gameId:', message.data?.id, 'isSinglePlayer:', isSinglePlayer);
           const previousState = this.currentGameState$.value;
           this.currentGameState$.next(message.data);
-          // For single player games, navigate to game on first update (countdown starts)
-          // Only navigate if we're not already on the game page
+          
+          // Handle navigation for game updates
           if (message.data?.id) {
             const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
-            // Navigate if we don't have previous state OR if we're not on the correct game page
-            if (!previousState || this.router.url !== gamePath) {
-              // First game update (countdown) - navigate to game page
-              console.log('Navigating to game:', gamePath, 'isSinglePlayer:', isSinglePlayer);
+            const currentPath = this.router.url;
+            
+            // Navigate if:
+            // 1. We don't have previous state (first update or reconnection)
+            // 2. We're not on the correct game page
+            // 3. Game is in playing state (reconnection scenario - restore game)
+            if (!previousState || currentPath !== gamePath || message.data.status === 'playing') {
+              console.log('Navigating to game:', gamePath, 'isSinglePlayer:', isSinglePlayer, 'status:', message.data.status);
               this.router.navigate([isSinglePlayer ? '/game/single' : '/game/multiplayer', message.data.id]);
             }
           }

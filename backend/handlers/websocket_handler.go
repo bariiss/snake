@@ -267,6 +267,9 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if player is in an active game and restore game state
+	h.gameManager.RestorePlayerGameState(player)
+
 	// Start goroutines for reading and writing
 	go h.writePump(player, conn)
 	h.readPump(player, conn)

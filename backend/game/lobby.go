@@ -427,3 +427,48 @@ func (gm *Manager) SendGameState(player *models.Player, gameID string) {
 
 	gm.sendMessage(player, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
 }
+
+// RestorePlayerGameState restores game state for a reconnecting player
+func (gm *Manager) RestorePlayerGameState(player *models.Player) {
+	gm.Mutex.RLock()
+	defer gm.Mutex.RUnlock()
+
+	// Find active game for this player
+	for gameID, game := range gm.Games {
+		game.Mutex.RLock()
+		isPlayer := game.Player1.ID == player.ID || (game.Player2 != nil && game.Player2.ID == player.ID)
+		isSpectator := game.Spectators[player.ID] != nil
+		isActive := game.IsActive
+		gameState := game.State
+		game.Mutex.RUnlock()
+
+		if (isPlayer || isSpectator) && isActive && gameState != nil {
+			// Player is in an active game - restore game state
+			log.Printf("Restoring game state for reconnecting player %s (game: %s)", player.Username, gameID)
+
+			// Update player's Send channel reference in game
+			game.Mutex.Lock()
+			if game.Player1.ID == player.ID {
+				game.Player1.Send = player.Send
+			} else if game.Player2 != nil && game.Player2.ID == player.ID {
+				game.Player2.Send = player.Send
+			} else if isSpectator {
+				if game.Spectators[player.ID] != nil {
+					game.Spectators[player.ID].Send = player.Send
+				}
+			}
+			game.Mutex.Unlock()
+
+			// Send current game state
+			stateCopy := *gameState
+			gm.sendMessage(player, constants.MSG_GAME_UPDATE, map[string]any{"data": stateCopy})
+
+			// If game is playing, also send game_start to ensure frontend is in correct state
+			if gameState.Status == "playing" {
+				gm.sendMessage(player, constants.MSG_GAME_START, map[string]any{"data": stateCopy})
+			}
+
+			return
+		}
+	}
+}
