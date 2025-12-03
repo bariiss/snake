@@ -1,0 +1,16 @@
+services:
+  webrtc-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webrtc-test
+    ports:
+      - "8012:80"
+    restart: unless-stopped
+    networks:
+      - webrtc-test-network
+
+networks:
+  webrtc-test-network:
+    driver: bridge
+
