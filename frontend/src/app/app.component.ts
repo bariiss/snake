@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { GameService } from './services/game.service';
+import { ConnectionStatusComponent } from './components/connection-status/connection-status.component';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, ConnectionStatusComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
