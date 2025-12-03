@@ -211,6 +211,10 @@ func (gm *Manager) BroadcastLobbyStatus() {
 }
 
 func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[string]any) {
+	if player == nil {
+		return
+	}
+
 	message := map[string]any{
 		"type": msgType,
 	}
@@ -224,14 +228,22 @@ func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[s
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("Failed to send WebSocket message to player %s (%s) - channel closed: %v", player.ID, player.Username, r)
+					// Channel closed - player disconnected, this is expected
+					// Don't log as error for game updates (they're frequent)
+					if msgType != constants.MSG_GAME_UPDATE {
+						log.Printf("Failed to send WebSocket message to player %s (%s) - channel closed: %v", player.ID, player.Username, r)
+					}
 				}
 			}()
 			select {
 			case player.Send <- jsonData:
-				return
+				// Successfully sent
 			default:
-				log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
+				// Channel full - for game updates, this is OK (next update will come soon)
+				// Only log for non-game-update messages
+				if msgType != constants.MSG_GAME_UPDATE {
+					log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
+				}
 			}
 		}()
 	}

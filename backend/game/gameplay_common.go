@@ -224,18 +224,22 @@ func (gm *Manager) generateFood(snakes []models.Snake) models.Position {
 
 // broadcastToPlayers broadcasts message to all players and spectators (common utility)
 func (gm *Manager) broadcastToPlayers(game *models.Game, msgType string, data map[string]any) {
-	// Send to Player1 (prioritize WebSocket, fallback to WebRTC)
-	gm.sendMessage(game.Player1, msgType, data)
+	// Send to Player1 only if they have an active connection
+	if game.Player1 != nil && game.Player1.Send != nil {
+		gm.sendMessage(game.Player1, msgType, data)
+	}
 
-	// Send to Player2 if exists (multiplayer only)
-	if game.Player2 != nil {
+	// Send to Player2 if exists and has active connection (multiplayer only)
+	if game.Player2 != nil && game.Player2.Send != nil {
 		gm.sendMessage(game.Player2, msgType, data)
 	}
 
-	// Send to spectators (prioritize WebSocket, fallback to WebRTC)
+	// Send to spectators only if they have active connections
 	game.Mutex.RLock()
 	for _, spectator := range game.Spectators {
-		gm.sendMessage(spectator, msgType, data)
+		if spectator != nil && spectator.Send != nil {
+			gm.sendMessage(spectator, msgType, data)
+		}
 	}
 	game.Mutex.RUnlock()
 }
