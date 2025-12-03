@@ -1,0 +1,42 @@
+<div class="connection-status-container" *ngIf="isEnabled">
+  <div class="connection-status-header">
+    <span class="connection-status-title">Connection Status</span>
+    <button class="toggle-button" (click)="toggle()" title="Hide connection status">×</button>
+  </div>
+  <div class="connection-status-items" *ngIf="connectionStatus">
+    <div class="connection-item">
+      <span class="connection-label">WebSocket:</span>
+      <span class="connection-value" [class]="getStatusClass(connectionStatus.websocket.status)">
+        <span class="status-icon">{{ getStatusIcon(connectionStatus.websocket.status) }}</span>
+        {{ connectionStatus.websocket.status }}
+      </span>
+    </div>
+    <div class="connection-item">
+      <span class="connection-label">WebRTC:</span>
+      <span class="connection-value" [class]="getStatusClass(connectionStatus.webrtc.status)">
+        <span class="status-icon">{{ getStatusIcon(connectionStatus.webrtc.status) }}</span>
+        {{ connectionStatus.webrtc.status }}
+        <span class="status-detail" *ngIf="connectionStatus.webrtc.iceConnectionState">
+          ({{ connectionStatus.webrtc.iceConnectionState }})
+        </span>
+      </span>
+    </div>
+    <div class="connection-item">
+      <span class="connection-label">Peer-to-Peer:</span>
+      <span class="connection-value" [class]="getStatusClass(connectionStatus.peerToPeer.status)">
+        <span class="status-icon">{{ getStatusIcon(connectionStatus.peerToPeer.status) }}</span>
+        {{ connectionStatus.peerToPeer.status }}
+        <span class="status-detail" *ngIf="connectionStatus.peerToPeer.iceConnectionState">
+          ({{ connectionStatus.peerToPeer.iceConnectionState }})
+        </span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="connection-status-toggle" *ngIf="!isEnabled">
+  <button class="toggle-button-show" (click)="toggle()" title="Show connection status">
+    📡
+  </button>
+</div>
+
