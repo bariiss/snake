@@ -575,11 +575,19 @@ export class WebRTCService {
       }
     }
     
-    // Production or Docker: Use same hostname as frontend, but with backend port (8020)
+    // Production: Use same hostname as frontend, no port (HTTPS handles it)
+    // Development/Docker: Use same hostname with backend port (8020)
+    if (environment.production) {
+      const url = `${protocol}//${host}`;
+      console.log('WebRTC URL (production):', url, 'hostname:', host);
+      return url;
+    }
+
+    // Docker/Development: Use same hostname as frontend, but with backend port (8020)
     // This works for Docker Compose where frontend is on port 80 and backend on 8020
     // Never use 'backend' hostname - it's only valid inside Docker network, not in browser
     const url = `${protocol}//${host}:8020`;
-    console.log('WebRTC URL:', url, 'hostname:', host, 'production:', environment.production);
+    console.log('WebRTC URL (docker/dev):', url, 'hostname:', host);
     return url;
   }
 
