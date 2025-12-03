@@ -24,7 +24,7 @@ export interface ConnectionStatus {
 @Injectable({
   providedIn: 'root'
 })
-export class ConnectionStatusService implements OnDestroy {
+export class ConnectionStatusService {
   private websocketStatus$ = new BehaviorSubject<ConnectionStatus['websocket']>({
     status: 'disconnected'
   });
@@ -130,14 +130,19 @@ export class ConnectionStatusService implements OnDestroy {
         const connectionState = pc.connectionState;
         let status: ConnectionStatus['webrtc']['status'];
         
-        if (connectionState === 'connected') {
-          status = 'connected';
-        } else if (connectionState === 'connecting') {
-          status = 'connecting';
-        } else if (connectionState === 'failed' || connectionState === 'disconnected') {
-          status = 'error';
-        } else {
-          status = 'disconnected';
+        switch (connectionState) {
+          case 'connected':
+            status = 'connected';
+            break;
+          case 'connecting':
+            status = 'connecting';
+            break;
+          case 'failed':
+          case 'disconnected':
+            status = 'error';
+            break;
+          default:
+            status = 'disconnected';
         }
         
         this.webrtcStatus$.next({
@@ -162,14 +167,19 @@ export class ConnectionStatusService implements OnDestroy {
         const connectionState = pc?.connectionState;
         let status: ConnectionStatus['peerToPeer']['status'];
         
-        if (connectionState === 'connected') {
-          status = 'connected';
-        } else if (connectionState === 'connecting') {
-          status = 'connecting';
-        } else if (connectionState === 'failed' || connectionState === 'disconnected') {
-          status = 'error';
-        } else {
-          status = 'disconnected';
+        switch (connectionState) {
+          case 'connected':
+            status = 'connected';
+            break;
+          case 'connecting':
+            status = 'connecting';
+            break;
+          case 'failed':
+          case 'disconnected':
+            status = 'error';
+            break;
+          default:
+            status = 'disconnected';
         }
         
         this.peerToPeerStatus$.next({
@@ -184,12 +194,16 @@ export class ConnectionStatusService implements OnDestroy {
           const connectionState = pc.connectionState;
           let status: ConnectionStatus['peerToPeer']['status'];
           
-          if (connectionState === 'connecting' || connectionState === 'connecting') {
-            status = 'connecting';
-          } else if (connectionState === 'failed') {
-            status = 'error';
-          } else {
-            status = 'disconnected';
+          switch (connectionState) {
+            case 'connecting':
+            case 'new':
+              status = 'connecting';
+              break;
+            case 'failed':
+              status = 'error';
+              break;
+            default:
+              status = 'disconnected';
           }
           
           this.peerToPeerStatus$.next({
