@@ -48,6 +48,16 @@
         <span class="traffic-sent">↑ {{ formatBytes(connectionStatus.peerToPeer.bytesSent || 0) }}</span>
         <span class="traffic-received">↓ {{ formatBytes(connectionStatus.peerToPeer.bytesReceived || 0) }}</span>
       </div>
+      <div class="ip-info" *ngIf="connectionStatus.peerToPeer.status === 'connected' && (connectionStatus.peerToPeer.localIP || connectionStatus.peerToPeer.remoteIP)">
+        <div class="ip-row" *ngIf="connectionStatus.peerToPeer.localIP">
+          <span class="ip-label">Local:</span>
+          <span class="ip-value">{{ connectionStatus.peerToPeer.localIP }}:{{ connectionStatus.peerToPeer.localPort || 'N/A' }}</span>
+        </div>
+        <div class="ip-row" *ngIf="connectionStatus.peerToPeer.remoteIP">
+          <span class="ip-label">Remote:</span>
+          <span class="ip-value">{{ connectionStatus.peerToPeer.remoteIP }}:{{ connectionStatus.peerToPeer.remotePort || 'N/A' }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

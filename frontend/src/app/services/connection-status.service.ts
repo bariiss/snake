@@ -24,6 +24,10 @@ export interface ConnectionStatus {
     connectionState?: string;
     bytesSent?: number;
     bytesReceived?: number;
+    localIP?: string;
+    localPort?: number;
+    remoteIP?: string;
+    remotePort?: number;
   };
 }
 
@@ -217,12 +221,36 @@ export class ConnectionStatusService {
         // Get traffic stats from WebRTC stats API and DataChannel
         let bytesSent = 0;
         let bytesReceived = 0;
+        let localIP: string | undefined;
+        let localPort: number | undefined;
+        let remoteIP: string | undefined;
+        let remotePort: number | undefined;
+        
         try {
           const stats = await pc.getStats();
           stats.forEach((report: any) => {
             if (report.type === 'data-channel' && report.label === 'game') {
               bytesSent += report.bytesSent || 0;
               bytesReceived += report.bytesReceived || 0;
+            }
+            // Get IP and port from candidate-pair
+            if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+              // Find local candidate
+              const localCandidate = Array.from(stats.values()).find((r: any) => 
+                r.type === 'local-candidate' && r.id === report.localCandidateId
+              ) as any;
+              if (localCandidate) {
+                localIP = localCandidate.ip || localCandidate.address;
+                localPort = localCandidate.port;
+              }
+              // Find remote candidate
+              const remoteCandidate = Array.from(stats.values()).find((r: any) => 
+                r.type === 'remote-candidate' && r.id === report.remoteCandidateId
+              ) as any;
+              if (remoteCandidate) {
+                remoteIP = remoteCandidate.ip || remoteCandidate.address;
+                remotePort = remoteCandidate.port;
+              }
             }
           });
         } catch (error) {
@@ -234,7 +262,11 @@ export class ConnectionStatusService {
           iceConnectionState,
           connectionState,
           bytesSent,
-          bytesReceived
+          bytesReceived,
+          localIP,
+          localPort,
+          remoteIP,
+          remotePort
         });
       } else {
         const pc = (this.webrtcService as any).peerToPeerConnection;
