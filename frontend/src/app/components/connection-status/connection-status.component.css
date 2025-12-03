@@ -1,13 +1,13 @@
 .connection-status-container {
   position: fixed;
-  top: 10px;
+  top: 60px;
   right: 10px;
   background: rgba(26, 26, 46, 0.95);
   border: 2px solid #16213e;
   border-radius: 8px;
   padding: 12px;
   min-width: 250px;
-  z-index: 1000;
+  z-index: 999;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   font-size: 0.85rem;
 }
@@ -137,9 +137,9 @@
 
 .connection-status-toggle {
   position: fixed;
-  top: 10px;
+  top: 60px;
   right: 10px;
-  z-index: 1000;
+  z-index: 999;
 }
 
 .toggle-button-show {
