@@ -335,12 +335,29 @@ export class GameComponent implements OnInit, OnDestroy {
       // Check if this is an arrow key (for speed boost)
       const isArrowKey = event.key.startsWith('Arrow');
       
-      if (isArrowKey && !this.speedBoostActive) {
-        // Start speed boost for arrow keys
+      if (isArrowKey) {
+        // Always send move immediately for arrow keys (even if speed boost is active)
+        // This ensures rapid direction changes are detected
+        this.gameService.sendPlayerMove(this.gameId, direction);
+        
+        // Update current direction
+        const directionChanged = this.currentDirection !== direction;
         this.currentDirection = direction;
-        this.speedBoostActive = true;
-        this.startSpeedBoost();
-      } else if (!isArrowKey) {
+        
+        if (!this.speedBoostActive) {
+          // Start speed boost if not already active
+          this.speedBoostActive = true;
+          this.startSpeedBoost();
+        } else if (directionChanged) {
+          // If direction changed while speed boost is active, restart interval with new direction
+          // This ensures the interval uses the new direction immediately
+          if (this.speedBoostInterval) {
+            clearInterval(this.speedBoostInterval);
+            this.speedBoostInterval = null;
+          }
+          this.startSpeedBoost();
+        }
+      } else {
         // Regular key (WASD) - send move immediately
         this.gameService.sendPlayerMove(this.gameId, direction);
       }
@@ -351,7 +368,27 @@ export class GameComponent implements OnInit, OnDestroy {
   handleKeyUp(event: KeyboardEvent): void {
     // Check if arrow key was released
     if (event.key.startsWith('Arrow')) {
-      this.stopSpeedBoost();
+      // Only stop speed boost if the released key matches the current direction
+      // This allows holding multiple arrow keys and releasing one without stopping boost
+      const releasedDirection = this.getDirectionFromKey(event.key);
+      if (releasedDirection === this.currentDirection) {
+        this.stopSpeedBoost();
+      }
+    }
+  }
+
+  private getDirectionFromKey(key: string): string {
+    switch (key) {
+      case 'ArrowUp':
+        return 'up';
+      case 'ArrowDown':
+        return 'down';
+      case 'ArrowLeft':
+        return 'left';
+      case 'ArrowRight':
+        return 'right';
+      default:
+        return '';
     }
   }
 
