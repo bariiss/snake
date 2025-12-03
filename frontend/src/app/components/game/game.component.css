@@ -118,8 +118,13 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  width: 140px;
+  min-width: 160px;
+  white-space: nowrap;
   text-align: center;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-mode-selection {
