@@ -277,13 +277,12 @@ func (gm *Manager) startRematch(gameID string) {
 
 	// Reset game state and start game directly (no additional countdown)
 	game.Mutex.Lock()
+	// At this point, game.Player2 is guaranteed to be non-nil due to earlier check
 	game.State.Status = "playing"
 	game.State.Countdown = 0
 	game.State.Winner = ""
 	game.Player1.Ready = false
-	if game.Player2 != nil {
-		game.Player2.Ready = false
-	}
+	game.Player2.Ready = false
 
 	// Reset snakes
 	snake1 := models.Snake{
@@ -296,21 +295,17 @@ func (gm *Manager) startRematch(gameID string) {
 		Username:  game.Player1.Username,
 	}
 
-	var snake2 models.Snake
-	if game.Player2 != nil {
-		snake2 = models.Snake{
-			ID:        game.Player2.ID,
-			Body:      []models.Position{{X: 35, Y: 15}, {X: 36, Y: 15}, {X: 37, Y: 15}},
-			Direction: constants.LEFT,
-			NextDir:   constants.LEFT,
-			Color:     "#0000FF",
-			Score:     0,
-			Username:  game.Player2.Username,
-		}
-		game.State.Snakes = []models.Snake{snake1, snake2}
-	} else {
-		game.State.Snakes = []models.Snake{snake1}
+	snake2 := models.Snake{
+		ID:        game.Player2.ID,
+		Body:      []models.Position{{X: 35, Y: 15}, {X: 36, Y: 15}, {X: 37, Y: 15}},
+		Direction: constants.LEFT,
+		NextDir:   constants.LEFT,
+		Color:     "#0000FF",
+		Score:     0,
+		Username:  game.Player2.Username,
 	}
+
+	game.State.Snakes = []models.Snake{snake1, snake2}
 	game.State.Food = models.Food{Position: gm.generateFood([]models.Snake{snake1, snake2})}
 	game.IsActive = true
 	game.Mutex.Unlock()
