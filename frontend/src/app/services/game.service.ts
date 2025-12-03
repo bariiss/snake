@@ -102,6 +102,7 @@ export class GameService {
     this.webrtcService.peerToPeerMessages$.subscribe(message => {
       switch (message.type) {
         case 'game_update':
+          console.log('Received game_update from P2P:', message.data?.status, 'gameId:', message.data?.id);
           if (message.data) {
             this.currentGameState$.next(message.data);
           }
@@ -328,20 +329,22 @@ export class GameService {
           }
           break;
         case 'game_update':
-          // Ignore game_update from WebSocket if P2P connection is established
-          // P2P connection should handle game updates for multiplayer games
-          if (this.webrtcService.isPeerConnected()) {
-            console.log('Ignoring game_update from WebSocket - P2P connection is active');
+          // Check if this is a single player game
+          const isSinglePlayer = message.data?.is_single_player || !message.data?.player2;
+          
+          // Ignore game_update from WebSocket if P2P connection is established AND it's a multiplayer game
+          // Single player games should always use WebSocket, not P2P
+          if (!isSinglePlayer && this.webrtcService.isPeerConnected()) {
+            console.log('Ignoring game_update from WebSocket - P2P connection is active for multiplayer game');
             break;
           }
           
-          console.log('Received game_update:', message.data?.status, 'gameId:', message.data?.id);
+          console.log('Received game_update:', message.data?.status, 'gameId:', message.data?.id, 'isSinglePlayer:', isSinglePlayer);
           const previousState = this.currentGameState$.value;
           this.currentGameState$.next(message.data);
           // For single player games, navigate to game on first update (countdown starts)
           // Only navigate if we're not already on the game page
           if (message.data?.id) {
-            const isSinglePlayer = message.data.is_single_player || !message.data.player2;
             const gamePath = isSinglePlayer ? `/game/single/${message.data.id}` : `/game/multiplayer/${message.data.id}`;
             // Navigate if we don't have previous state OR if we're not on the correct game page
             if (!previousState || this.router.url !== gamePath) {
