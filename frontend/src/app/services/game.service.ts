@@ -640,6 +640,17 @@ export class GameService {
     });
   }
 
+  leaveGame(gameId: string): void {
+    if (this.wsService.isConnected() && gameId) {
+      this.wsService.send({
+        type: 'leave_game',
+        game_id: gameId
+      });
+    }
+    // Clear game state immediately
+    this.currentGameState$.next(null);
+  }
+
   disconnect(): void {
     // Show disconnecting steps
     this.connectionStatus$.next({ step: 'disconnecting_peer', completed: false });

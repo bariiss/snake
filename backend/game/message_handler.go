@@ -96,5 +96,9 @@ func (gm *Manager) handleMessage(player *models.Player, msgType string, msg map[
 		if gameID, ok := msg["game_id"].(string); ok {
 			gm.SendGameState(player, gameID)
 		}
+	case constants.MSG_LEAVE_GAME:
+		if gameID, ok := msg["game_id"].(string); ok {
+			gm.LeaveGame(player, gameID)
+		}
 	}
 }

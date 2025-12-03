@@ -39,6 +39,7 @@ const (
 	MSG_PEER_ICE_CANDIDATE  = "peer_ice_candidate"
 	MSG_START_SINGLE_PLAYER = "start_single_player"
 	MSG_GET_GAME_STATE      = "get_game_state"
+	MSG_LEAVE_GAME          = "leave_game"
 )
 
 type Direction int

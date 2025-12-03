@@ -32,6 +32,7 @@ export class GameComponent implements OnInit, OnDestroy {
   isReady = false;
   private previousScores: Map<string, number> = new Map();
   private audioContext: AudioContext | null = null;
+  private isRedirecting = false; // Flag to prevent infinite redirect loops
 
   constructor(
     private route: ActivatedRoute,
@@ -64,6 +65,12 @@ export class GameComponent implements OnInit, OnDestroy {
 
     // Helper function to redirect based on login status
     const redirectBasedOnLoginStatus = (message: string) => {
+      // Prevent infinite redirect loops
+      if (this.isRedirecting) {
+        return;
+      }
+      this.isRedirecting = true;
+      
       this.gameService.getCurrentPlayer().subscribe(player => {
         if (player) {
           // User is logged in, redirect to mode selection
@@ -114,7 +121,7 @@ export class GameComponent implements OnInit, OnDestroy {
           }
           
           // Check if game is finished - redirect if accessing finished game URL
-          if (state.status === 'finished' && state.id === this.gameId) {
+          if (state.status === 'finished' && state.id === this.gameId && !this.isRedirecting) {
             // Game is finished, redirect based on login status
             redirectBasedOnLoginStatus('This game has ended.');
             return;
@@ -472,11 +479,23 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   backToModeSelection(): void {
+    // End the game if it's active
+    if (this.gameId && this.gameState && this.gameState.status === 'playing') {
+      this.gameService.leaveGame(this.gameId);
+    }
+    // Clear game state
+    this.gameState = null;
     // Navigate to mode selection
     this.router.navigate(['/mode-selection']);
   }
 
   disconnect(): void {
+    // End the game if it's active
+    if (this.gameId && this.gameState && this.gameState.status === 'playing') {
+      this.gameService.leaveGame(this.gameId);
+    }
+    // Clear game state
+    this.gameState = null;
     // Disconnect and go to login
     this.gameService.disconnect();
     this.router.navigate(['/login']);

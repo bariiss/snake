@@ -103,6 +103,91 @@ func (gm *Manager) RemovePlayer(playerID string) {
 	}
 }
 
+// LeaveGame allows a player to voluntarily leave a game
+func (gm *Manager) LeaveGame(player *models.Player, gameID string) {
+	gm.Mutex.RLock()
+	game, exists := gm.Games[gameID]
+	gm.Mutex.RUnlock()
+
+	if !exists {
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "Game not found",
+			"code":    "GAME_NOT_FOUND",
+		})
+		return
+	}
+
+	game.Mutex.Lock()
+	// Check if player is in this game
+	isPlayer := game.Player1.ID == player.ID || (game.Player2 != nil && game.Player2.ID == player.ID)
+	if !isPlayer {
+		// Check if spectator
+		_, isSpectator := game.Spectators[player.ID]
+		if isSpectator {
+			delete(game.Spectators, player.ID)
+			game.Mutex.Unlock()
+			gm.BroadcastGamesList()
+			return
+		}
+		game.Mutex.Unlock()
+		gm.sendMessage(player, constants.MSG_ERROR, map[string]any{
+			"message": "You are not in this game",
+			"code":    "NOT_IN_GAME",
+		})
+		return
+	}
+
+	// Player is in this game - end the game
+	isActive := game.IsActive
+	isSinglePlayer := game.IsSinglePlayer
+	var otherPlayer *models.Player
+
+	// Determine which player is leaving
+	if game.Player1.ID == player.ID {
+		otherPlayer = game.Player2
+		game.Player1.Send = nil
+	}
+	if game.Player2 != nil && game.Player2.ID == player.ID {
+		otherPlayer = game.Player1
+		game.Player2.Send = nil
+	}
+
+	// Stop game ticker if game is active
+	if isActive && game.Ticker != nil {
+		game.Ticker.Stop()
+		game.Ticker = nil
+		game.IsActive = false
+	}
+	game.Mutex.Unlock()
+
+	// End the game
+	if isActive {
+		gm.endGame(game, "disconnect", game.State)
+	}
+
+	// Only send disconnect message if it's a multiplayer game with another player
+	if otherPlayer != nil && !isSinglePlayer && otherPlayer.Send != nil {
+		gm.sendMessage(otherPlayer, constants.MSG_PLAYER_DISCONNECTED, map[string]any{
+			"game_id": gameID,
+			"player":  player.Username,
+			"message": player.Username + " has left the game",
+		})
+		// Add other player back to lobby
+		if _, exists := gm.Lobby.Get(otherPlayer.ID); !exists {
+			gm.AddToLobby(otherPlayer)
+		}
+	}
+
+	// Remove game
+	gm.Mutex.Lock()
+	delete(gm.Games, gameID)
+	gm.Mutex.Unlock()
+
+	// Broadcast updated lobby status
+	gm.BroadcastLobbyStatus()
+	gm.BroadcastGamesList()
+}
+
 func (gm *Manager) AddSpectator(player *models.Player, gameID string) {
 	gm.Mutex.RLock()
 	game, exists := gm.Games[gameID]
