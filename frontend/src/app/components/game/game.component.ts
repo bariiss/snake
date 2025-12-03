@@ -129,6 +129,28 @@ export class GameComponent implements OnInit, OnDestroy {
           if (state.status === 'finished' && state.id === this.gameId && !this.isRedirecting) {
             // Game is finished, set redirecting flag immediately to prevent multiple redirects
             this.isRedirecting = true;
+            
+            // For multiplayer games, automatically redirect to lobby after showing game over
+            const isSinglePlayer = state.is_single_player || (state.players && state.players.length <= 1);
+            if (!isSinglePlayer && !this.isSpectator) {
+              // Wait a moment to show the game over screen, then redirect to lobby
+              setTimeout(() => {
+                // Clear game state to prevent further updates
+                this.gameState = null;
+                // Clear game state from service
+                this.gameService.getCurrentGameState().subscribe(currentState => {
+                  if (currentState?.id === this.gameId) {
+                    // Clear the game state for this specific game
+                    this.gameService.leaveGame(this.gameId);
+                  }
+                }).unsubscribe();
+                // Navigate to lobby
+                this.router.navigate(['/lobby']);
+              }, 3000); // 3 seconds to show game over screen
+              return;
+            }
+            
+            // For single player games, use the existing redirect logic
             // Clear game state to prevent further updates
             this.gameState = null;
             // Clear game state from service immediately to stop receiving updates for this game

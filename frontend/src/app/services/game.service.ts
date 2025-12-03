@@ -392,11 +392,24 @@ export class GameService {
           }
           break;
         case 'game_over':
+          const gameOverData = message.data || {};
           this.currentGameState$.next({
-            ...(message.data || {}),
+            ...gameOverData,
             rematchRequesterId: undefined,
             rematchRequesterName: undefined
           });
+          
+          // For multiplayer games, automatically redirect to lobby after a short delay
+          const isMultiplayerGame = !gameOverData.is_single_player && gameOverData.players && gameOverData.players.length > 1;
+          if (isMultiplayerGame) {
+            // Wait a moment to show the game over screen, then redirect to lobby
+            setTimeout(() => {
+              // Clear game state
+              this.currentGameState$.next(null);
+              // Navigate to lobby
+              this.router.navigate(['/lobby']);
+            }, 3000); // 3 seconds to show game over screen
+          }
           break;
         case 'player_disconnected':
           // Player disconnected - update game state to show opponent disconnected
