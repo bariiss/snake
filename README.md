@@ -6,41 +6,41 @@ A real-time multiplayer Snake game built with Go backend and Angular frontend, f
 
 ```text
 snake/
-├── backend/                    # Go WebSocket/WebRTC server
-│   ├── main.go                # Server entry point
-│   ├── go.mod                  # Go module dependencies
-│   ├── go.sum                  # Go module checksums
-│   ├── Dockerfile              # Backend container image
-│   ├── .dockerignore           # Docker ignore rules
-│   ├── auth/                   # JWT authentication
-│   │   ├── jwt.go              # JWT token generation/validation
-│   │   └── middleware.go       # Authentication middleware
-│   ├── constants/              # Application constants
-│   │   └── constants.go        # Game constants and message types
-│   ├── models/                 # Data models
-│   │   └── models.go           # Game, Player, Snake models
-│   ├── game/                   # Game logic and managers
-│   │   ├── manager.go          # Main game manager
-│   │   ├── lobby.go            # Lobby management
-│   │   ├── players.go          # Player management
-│   │   ├── message_handler.go  # Message routing
-│   │   ├── matchmaking.go      # Matchmaking logic
-│   │   ├── gameplay.go         # Game flow routing
-│   │   ├── gameplay_common.go  # Common game logic
-│   │   ├── gameplay_single.go  # Single player game logic
-│   │   ├── gameplay_multi.go   # Multiplayer game logic
-│   │   ├── single_game.go      # Single player game manager
-│   │   ├── single_manager.go   # Single player manager
-│   │   └── multi_manager.go    # Multiplayer manager
-│   ├── handlers/               # HTTP/WebSocket/WebRTC handlers
+├── backend/                     # Go WebSocket/WebRTC server
+│   ├── main.go                  # Server entry point
+│   ├── go.mod                   # Go module dependencies
+│   ├── go.sum                   # Go module checksums
+│   ├── Dockerfile               # Backend container image
+│   ├── .dockerignore            # Docker ignore rules
+│   ├── auth/                    # JWT authentication
+│   │   ├── jwt.go               # JWT token generation/validation
+│   │   └── middleware.go        # Authentication middleware
+│   ├── constants/               # Application constants
+│   │   └── constants.go         # Game constants and message types
+│   ├── models/                  # Data models
+│   │   └── models.go            # Game, Player, Snake models
+│   ├── game/                    # Game logic and managers
+│   │   ├── manager.go           # Main game manager
+│   │   ├── lobby.go             # Lobby management
+│   │   ├── players.go           # Player management
+│   │   ├── message_handler.go   # Message routing
+│   │   ├── matchmaking.go       # Matchmaking logic
+│   │   ├── gameplay.go          # Game flow routing
+│   │   ├── gameplay_common.go   # Common game logic
+│   │   ├── gameplay_single.go   # Single player game logic
+│   │   ├── gameplay_multi.go    # Multiplayer game logic
+│   │   ├── single_game.go       # Single player game manager
+│   │   ├── single_manager.go    # Single player manager
+│   │   └── multi_manager.go     # Multiplayer manager
+│   ├── handlers/                # HTTP/WebSocket/WebRTC handlers
 │   │   ├── websocket_handler.go # WebSocket connection handler
-│   │   ├── webrtc_handler.go   # WebRTC signaling handler
-│   │   └── peer_signaling.go   # Peer-to-peer signaling
-│   ├── lobby/                  # Lobby service
-│   │   └── service.go          # Lobby service implementation
-│   └── webrtc/                 # WebRTC peer management
-│       └── peer.go             # Peer connection management
-├── frontend/                   # Angular frontend
+│   │   ├── webrtc_handler.go    # WebRTC signaling handler
+│   │   └── peer_signaling.go    # Peer-to-peer signaling
+│   ├── lobby/                   # Lobby service
+│   │   └── service.go           # Lobby service implementation
+│   └── webrtc/                  # WebRTC peer management
+│       └── peer.go              # Peer connection management
+├── frontend/                    # Angular frontend
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── components/
@@ -69,9 +69,9 @@ snake/
 │   ├── generate-env.js                 # Environment generator
 │   ├── angular.json                    # Angular configuration
 │   ├── package.json                    # Node dependencies
-│   ├── tsconfig.json                    # TypeScript config
-│   ├── tsconfig.app.json                # App TypeScript config
-│   └── .dockerignore                    # Docker ignore rules
+│   ├── tsconfig.json                   # TypeScript config
+│   ├── tsconfig.app.json               # App TypeScript config
+│   └── .dockerignore                   # Docker ignore rules
 ├── coturn/                             # TURN server configuration
 │   └── docker-compose.yaml             # CoTURN server setup
 ├── proxy/                              # Reverse proxy configuration
