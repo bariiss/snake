@@ -8,16 +8,22 @@ export interface ConnectionStatus {
   websocket: {
     status: 'connected' | 'disconnected' | 'connecting' | 'error';
     readyState?: number;
+    bytesSent?: number;
+    bytesReceived?: number;
   };
   webrtc: {
     status: 'connected' | 'disconnected' | 'connecting' | 'error';
     iceConnectionState?: string;
     connectionState?: string;
+    bytesSent?: number;
+    bytesReceived?: number;
   };
   peerToPeer: {
     status: 'connected' | 'disconnected' | 'connecting' | 'error';
     iceConnectionState?: string;
     connectionState?: string;
+    bytesSent?: number;
+    bytesReceived?: number;
   };
 }
 
@@ -111,7 +117,9 @@ export class ConnectionStatusService {
         
         this.websocketStatus$.next({
           status,
-          readyState
+          readyState,
+          bytesSent: this.wsService.getBytesSent(),
+          bytesReceived: this.wsService.getBytesReceived()
         });
       } else {
         this.websocketStatus$.next({
@@ -123,11 +131,17 @@ export class ConnectionStatusService {
 
   private monitorWebRTC(): void {
     // Check WebRTC status periodically
-    setInterval(() => {
+    // Check both peerConnection (legacy) and peerToPeerConnection (active during games)
+    setInterval(async () => {
       const pc = (this.webrtcService as any).peerConnection;
-      if (pc) {
-        const iceConnectionState = pc.iceConnectionState;
-        const connectionState = pc.connectionState;
+      const p2pPc = (this.webrtcService as any).peerToPeerConnection;
+      
+      // Prefer peerToPeerConnection if it exists (active during games)
+      const activePc = p2pPc || pc;
+      
+      if (activePc) {
+        const iceConnectionState = activePc.iceConnectionState;
+        const connectionState = activePc.connectionState;
         let status: ConnectionStatus['webrtc']['status'];
         
         switch (connectionState) {
@@ -145,10 +159,27 @@ export class ConnectionStatusService {
             status = 'disconnected';
         }
         
+        // Get traffic stats from WebRTC stats API
+        let bytesSent = 0;
+        let bytesReceived = 0;
+        try {
+          const stats = await activePc.getStats();
+          stats.forEach((report: any) => {
+            if (report.type === 'transport') {
+              bytesSent += report.bytesSent || 0;
+              bytesReceived += report.bytesReceived || 0;
+            }
+          });
+        } catch (error) {
+          // Stats not available yet
+        }
+        
         this.webrtcStatus$.next({
           status,
           iceConnectionState,
-          connectionState
+          connectionState,
+          bytesSent,
+          bytesReceived
         });
       } else {
         this.webrtcStatus$.next({
@@ -160,9 +191,10 @@ export class ConnectionStatusService {
 
   private monitorPeerToPeer(): void {
     // Check Peer-to-Peer status periodically
-    setInterval(() => {
+    setInterval(async () => {
       if (this.webrtcService.isPeerConnected()) {
         const pc = (this.webrtcService as any).peerToPeerConnection;
+        const dataChannel = (this.webrtcService as any).peerToPeerDataChannel;
         const iceConnectionState = pc?.iceConnectionState;
         const connectionState = pc?.connectionState;
         let status: ConnectionStatus['peerToPeer']['status'];
@@ -182,10 +214,27 @@ export class ConnectionStatusService {
             status = 'disconnected';
         }
         
+        // Get traffic stats from WebRTC stats API and DataChannel
+        let bytesSent = 0;
+        let bytesReceived = 0;
+        try {
+          const stats = await pc.getStats();
+          stats.forEach((report: any) => {
+            if (report.type === 'data-channel' && report.label === 'game') {
+              bytesSent += report.bytesSent || 0;
+              bytesReceived += report.bytesReceived || 0;
+            }
+          });
+        } catch (error) {
+          // Stats not available yet
+        }
+        
         this.peerToPeerStatus$.next({
           status,
           iceConnectionState,
-          connectionState
+          connectionState,
+          bytesSent,
+          bytesReceived
         });
       } else {
         const pc = (this.webrtcService as any).peerToPeerConnection;

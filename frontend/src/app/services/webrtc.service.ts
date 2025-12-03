@@ -218,6 +218,7 @@ export class WebRTCService {
 
       this.peerToPeerConnection = new RTCPeerConnection(configuration);
       this.peerPlayerId = peerPlayerId;
+      this.addedCandidates.clear(); // Clear previous candidates when starting new connection
 
       // Handle incoming data channel (for non-initiator)
       if (!isInitiator) {
@@ -288,6 +289,7 @@ export class WebRTCService {
 
       this.peerToPeerConnection = new RTCPeerConnection(configuration);
       this.peerPlayerId = offer.from_player_id;
+      this.addedCandidates.clear(); // Clear previous candidates when starting new connection
 
       // Handle incoming data channel
       this.peerToPeerConnection.ondatachannel = (event) => {
@@ -370,9 +372,38 @@ export class WebRTCService {
     }
   }
 
+  private addedCandidates = new Set<string>(); // Track added candidates to prevent duplicates
+
   async handleICECandidate(candidate: any): Promise<void> {
     if (!this.peerToPeerConnection) {
       console.error('Peer-to-peer connection not initialized');
+      return;
+    }
+
+    // Check connection state - don't add candidates if connection is not in a valid state
+    const connectionState = this.peerToPeerConnection.connectionState;
+    if (connectionState === 'closed' || connectionState === 'failed' || connectionState === 'disconnected') {
+      console.warn('Cannot add ICE candidate - connection state is:', connectionState);
+      return;
+    }
+
+    // Check if candidate is null or empty (end-of-candidates marker)
+    if (!candidate || !candidate.candidate || candidate.candidate.trim() === '') {
+      // This is the end-of-candidates marker, try to add it
+      try {
+        await this.peerToPeerConnection.addIceCandidate(undefined);
+      } catch (error) {
+        // Ignore errors for end-of-candidates marker
+        console.debug('End-of-candidates marker (ignored):', error);
+      }
+      return;
+    }
+
+    // Create a unique key for this candidate to prevent duplicates
+    const candidateKey = `${candidate.sdpMid || ''}_${candidate.sdpMLineIndex || ''}_${candidate.candidate}`;
+    
+    if (this.addedCandidates.has(candidateKey)) {
+      console.debug('Skipping duplicate ICE candidate:', candidateKey);
       return;
     }
 
@@ -382,8 +413,19 @@ export class WebRTCService {
         sdpMLineIndex: candidate.sdpMLineIndex,
         sdpMid: candidate.sdpMid
       } as RTCIceCandidateInit);
-    } catch (error) {
-      console.error('Error handling ICE candidate:', error);
+      
+      // Mark candidate as added
+      this.addedCandidates.add(candidateKey);
+    } catch (error: any) {
+      // Check if error is due to connection state change (common and harmless)
+      if (error?.message?.includes('closed') || 
+          error?.message?.includes('failed') ||
+          error?.message?.includes('disconnected') ||
+          this.peerToPeerConnection.connectionState === 'disconnected') {
+        console.debug('ICE candidate not added - connection state changed:', error.message);
+      } else {
+        console.warn('Error handling ICE candidate:', error, 'candidate:', candidate);
+      }
     }
   }
 

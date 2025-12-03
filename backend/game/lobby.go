@@ -8,6 +8,8 @@ import (
 
 	"snake-backend/constants"
 	"snake-backend/models"
+
+	"github.com/pion/webrtc/v3"
 )
 
 // UsernameExists checks if a username is already in use (in lobby, active games, or spectators)
@@ -222,33 +224,51 @@ func (gm *Manager) sendMessage(player *models.Player, msgType string, data map[s
 
 	jsonData, _ := json.Marshal(message)
 
-	// Try WebSocket first (for lobby/matchmaking)
-	if player.Send != nil {
-		// Use recover to handle case where channel is closed
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					// Channel closed - player disconnected, this is expected
-					// Don't log as error for game updates (they're frequent)
+	// Check if player has active P2P connection for game updates
+	hasP2PConnection := false
+	if gm.WebRTCManager != nil && msgType == constants.MSG_GAME_UPDATE {
+		peer, exists := gm.WebRTCManager.GetPeer(player.ID)
+		if exists && peer != nil && peer.DataChannel != nil {
+			// Check if data channel is open
+			if peer.DataChannel.ReadyState() == webrtc.DataChannelStateOpen {
+				hasP2PConnection = true
+			}
+		}
+	}
+
+	// For game updates: if P2P connection is active, skip WebSocket and send only via P2P
+	// For other messages: send via WebSocket (lobby/matchmaking/signaling)
+	if !hasP2PConnection {
+		// Try WebSocket (for lobby/matchmaking/non-P2P game updates)
+		if player.Send != nil {
+			// Use recover to handle case where channel is closed
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						// Channel closed - player disconnected, this is expected
+						// Don't log as error for game updates (they're frequent)
+						if msgType != constants.MSG_GAME_UPDATE {
+							log.Printf("Failed to send WebSocket message to player %s (%s) - channel closed: %v", player.ID, player.Username, r)
+						}
+					}
+				}()
+				select {
+				case player.Send <- jsonData:
+					// Successfully sent
+				default:
+					// Channel full - for game updates, this is OK (next update will come soon)
+					// Only log for non-game-update messages
 					if msgType != constants.MSG_GAME_UPDATE {
-						log.Printf("Failed to send WebSocket message to player %s (%s) - channel closed: %v", player.ID, player.Username, r)
+						log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
 					}
 				}
 			}()
-			select {
-			case player.Send <- jsonData:
-				// Successfully sent
-			default:
-				// Channel full - for game updates, this is OK (next update will come soon)
-				// Only log for non-game-update messages
-				if msgType != constants.MSG_GAME_UPDATE {
-					log.Printf("Failed to send WebSocket message to player %s (%s) - channel full", player.ID, player.Username)
-				}
-			}
-		}()
+		}
 	}
 
-	// Fallback to WebRTC (if available)
+	// Send via WebRTC/P2P if available
+	// For game updates with P2P: only send via P2P (skip WebSocket)
+	// For other messages: send via both WebSocket and P2P (if available)
 	if gm.WebRTCManager != nil {
 		gm.WebRTCManager.SendMessage(player.ID, msgType, data)
 	}

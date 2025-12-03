@@ -17,6 +17,10 @@ export class WebSocketService {
   private shouldReconnect = true;
   private playerId: string | null = null;
   private token: string | null = null;
+  
+  // Traffic tracking
+  private bytesSent = 0;
+  private bytesReceived = 0;
 
   connect(username: string, token?: string): void {
     // If no token provided and no token in storage, only allow connection for initial login
@@ -113,6 +117,10 @@ export class WebSocketService {
 
       this.ws.onmessage = (event) => {
         try {
+          // Track received bytes
+          const bytes = new Blob([event.data]).size;
+          this.bytesReceived += bytes;
+          
           // Split by newline in case multiple messages are concatenated
           const messages = event.data.split('\n').filter((m: string) => m.trim());
           messages.forEach((msg: string) => {
@@ -166,13 +174,29 @@ export class WebSocketService {
 
   send(message: any): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
+      const messageStr = JSON.stringify(message);
+      const bytes = new Blob([messageStr]).size;
+      this.bytesSent += bytes;
+      this.ws.send(messageStr);
     } else {
       // Only warn if we're supposed to be connected (not during disconnect/cleanup)
       if (this.shouldReconnect) {
         console.warn('WebSocket not open, message not sent:', message);
       }
     }
+  }
+  
+  getBytesSent(): number {
+    return this.bytesSent;
+  }
+  
+  getBytesReceived(): number {
+    return this.bytesReceived;
+  }
+  
+  resetTrafficStats(): void {
+    this.bytesSent = 0;
+    this.bytesReceived = 0;
   }
 
   disconnect(): void {
