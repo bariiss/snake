@@ -544,24 +544,41 @@ export class WebRTCService {
   /**
    * Returns the ICE server configuration with STUN and TURN servers
    * This configuration is used for all WebRTC peer connections
-   * TURN server: turn.li1.nl:3478 (non-TLS only)
+   * TURN server IP is read from environment variable WEBRTC_TURN_IP
+   * Default: turn.li1.nl
    */
   private getICEConfiguration(): RTCConfiguration {
+    // Get TURN server IP from environment variable or use default
+    const turnServerIP = this.getTurnServerIP();
+    
     return {
       iceServers: [
         // STUN server
-        { urls: 'stun:turn.li1.nl:3478' },
-        // TURN server (non-TLS) - turn.li1.nl:3478 with UDP and TCP transports
+        { urls: `stun:${turnServerIP}:3478` },
+        // TURN server (non-TLS) with UDP and TCP transports
         {
           urls: [
-            'turn:turn.li1.nl:3478?transport=udp',
-            'turn:turn.li1.nl:3478?transport=tcp'
+            `turn:${turnServerIP}:3478?transport=udp`,
+            `turn:${turnServerIP}:3478?transport=tcp`
           ],
           username: 'peaceast',
           credential: 'endoplazmikretikulum'
         }
       ]
     };
+  }
+
+  /**
+   * Gets TURN server IP from environment variable or uses default
+   * Checks window object for runtime environment variables (set by Docker)
+   */
+  private getTurnServerIP(): string {
+    // Try to get from window object (set by Docker environment variables)
+    if (typeof window !== 'undefined' && (window as any).__TURN_SERVER_IP__) {
+      return (window as any).__TURN_SERVER_IP__;
+    }
+    // Default fallback
+    return 'turn.li1.nl';
   }
 }
 

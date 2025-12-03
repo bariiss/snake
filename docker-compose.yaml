@@ -8,6 +8,7 @@ services:
       - "8020:8020"
     environment:
       - PORT=8020
+      - WEBRTC_TURN_IP=192.168.50.198
     networks:
       - snake-network
     restart: unless-stopped
@@ -21,6 +22,8 @@ services:
     container_name: snake-frontend
     ports:
       - "80:80"
+    environment:
+      - WEBRTC_TURN_IP=192.168.50.198
     depends_on:
       - backend
     networks:

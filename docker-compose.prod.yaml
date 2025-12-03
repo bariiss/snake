@@ -6,6 +6,7 @@ services:
     container_name: snake-backend-prod
     environment:
       - PORT=8020
+      - WEBRTC_TURN_IP=213.14.134.174
     expose:
       - "8020"
     ports:
@@ -25,6 +26,8 @@ services:
       - "80"
     ports:
       - "8040:80"
+    environment:
+      - WEBRTC_TURN_IP=213.14.134.174
     networks:
       - snake-prod-network
     restart: unless-stopped

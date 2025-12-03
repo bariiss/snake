@@ -34,8 +34,12 @@ RUN npm install -g serve
 # Copy built app from builder
 COPY --from=builder /app/dist/snake-frontend /app/dist
 
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 80
 
-# Serve the built app
-CMD ["serve", "-s", "dist", "-l", "80"]
+# Use entrypoint script to inject environment variables at runtime
+ENTRYPOINT ["/app/entrypoint.sh"]
 

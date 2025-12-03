@@ -2,7 +2,9 @@ package webrtc
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	"snake-backend/models"
@@ -146,18 +148,22 @@ func (m *Manager) BroadcastToGame(player1ID, player2ID string, messageType strin
 }
 
 // getICEConfiguration returns the ICE server configuration with STUN and TURN servers
+// TURN server IP is read from environment variable WEBRTC_TURN_IP
+// Default: turn.li1.nl
 func (m *Manager) getICEConfiguration() webrtc.Configuration {
+	turnServerIP := getTurnServerIP()
+
 	return webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			// STUN server
 			{
-				URLs: []string{"stun:turn.li1.nl:3478"},
+				URLs: []string{fmt.Sprintf("stun:%s:3478", turnServerIP)},
 			},
-			// TURN server (non-TLS) - turn.li1.nl:3478 with UDP and TCP transports
+			// TURN server (non-TLS) with UDP and TCP transports
 			{
 				URLs: []string{
-					"turn:turn.li1.nl:3478?transport=udp",
-					"turn:turn.li1.nl:3478?transport=tcp",
+					fmt.Sprintf("turn:%s:3478?transport=udp", turnServerIP),
+					fmt.Sprintf("turn:%s:3478?transport=tcp", turnServerIP),
 				},
 				Username:   "peaceast",
 				Credential: "endoplazmikretikulum",
@@ -165,4 +171,13 @@ func (m *Manager) getICEConfiguration() webrtc.Configuration {
 		},
 		ICETransportPolicy: webrtc.ICETransportPolicyAll,
 	}
+}
+
+// getTurnServerIP gets TURN server IP from environment variable or uses default
+func getTurnServerIP() string {
+	if ip := os.Getenv("WEBRTC_TURN_IP"); ip != "" {
+		return ip
+	}
+	// Default fallback
+	return "turn.li1.nl"
 }
