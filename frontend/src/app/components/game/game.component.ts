@@ -33,6 +33,11 @@ export class GameComponent implements OnInit, OnDestroy {
   private previousScores: Map<string, number> = new Map();
   private audioContext: AudioContext | null = null;
   private isRedirecting = false; // Flag to prevent infinite redirect loops
+  private speedBoostActive = false; // Flag for speed boost when arrow key is held
+  private speedBoostInterval: any = null; // Interval for speed boost move sending
+  private currentDirection: string = ''; // Current direction being held
+  private baseMoveInterval = 100; // Base move interval in ms (matches backend TICK_RATE)
+  private speedBoostMultiplier = 1.3; // Speed boost multiplier (1.3x faster)
 
   constructor(
     private route: ActivatedRoute,
@@ -222,6 +227,7 @@ export class GameComponent implements OnInit, OnDestroy {
     if (this.gameStateTimeout) {
       clearTimeout(this.gameStateTimeout);
     }
+    this.stopSpeedBoost();
     this.subscriptions.unsubscribe();
     if (this.audioContext) {
       this.audioContext.close();
@@ -325,7 +331,53 @@ export class GameComponent implements OnInit, OnDestroy {
 
     if (direction) {
       event.preventDefault();
-      this.gameService.sendPlayerMove(this.gameId, direction);
+      
+      // Check if this is an arrow key (for speed boost)
+      const isArrowKey = event.key.startsWith('Arrow');
+      
+      if (isArrowKey && !this.speedBoostActive) {
+        // Start speed boost for arrow keys
+        this.currentDirection = direction;
+        this.speedBoostActive = true;
+        this.startSpeedBoost();
+      } else if (!isArrowKey) {
+        // Regular key (WASD) - send move immediately
+        this.gameService.sendPlayerMove(this.gameId, direction);
+      }
+    }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  handleKeyUp(event: KeyboardEvent): void {
+    // Check if arrow key was released
+    if (event.key.startsWith('Arrow')) {
+      this.stopSpeedBoost();
+    }
+  }
+
+  private startSpeedBoost(): void {
+    // Send initial move immediately
+    this.gameService.sendPlayerMove(this.gameId, this.currentDirection);
+    
+    // Calculate boosted interval (base / multiplier)
+    const boostedInterval = this.baseMoveInterval / this.speedBoostMultiplier;
+    
+    // Start sending moves at boosted rate
+    this.speedBoostInterval = setInterval(() => {
+      if (this.speedBoostActive && this.gameState?.status === 'playing' && !this.isSpectator) {
+        this.gameService.sendPlayerMove(this.gameId, this.currentDirection);
+      } else {
+        this.stopSpeedBoost();
+      }
+    }, boostedInterval);
+  }
+
+  private stopSpeedBoost(): void {
+    this.speedBoostActive = false;
+    this.currentDirection = '';
+    if (this.speedBoostInterval) {
+      clearInterval(this.speedBoostInterval);
+      this.speedBoostInterval = null;
     }
   }
 
